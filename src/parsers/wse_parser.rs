@@ -33,8 +33,8 @@ impl<'a> WSEParser<'a>{
         }
 
         // sort the results
-        for (key,mut value) in & mut result{
-            value.events.sort_by(|a,b| NaiveDateTime::cmp(&a.getTimestamp(),&b.getTimestamp()))
+        for (_key,value) in & mut result{
+            value.events.sort_by(|a,b| NaiveDateTime::cmp(&a.get_timestamp(),&b.get_timestamp()))
         }
 
         result
@@ -64,7 +64,7 @@ impl<'a> WSEParser<'a>{
     }
 
     fn process_symbol_file(&self, file: DirEntry, result: & mut HashMap<String, Symbol>, date: &NaiveDate) {
-        let mut event = get_type_from_filename(&file);
+        let event = get_type_from_filename(&file);
         let symbol = get_symbol_from_filename(&file);
 
         let events : & mut Vec<Event>;

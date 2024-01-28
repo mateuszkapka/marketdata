@@ -1,7 +1,7 @@
-use chrono::{NaiveDateTime, NaiveTime, NaiveDate};
+use chrono::NaiveDateTime;
 
 pub trait EventHeader{
-    fn getTimestamp(&self) -> NaiveDateTime;
+    fn get_timestamp(&self) -> NaiveDateTime;
 }
 
 

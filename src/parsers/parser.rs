@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use chrono::{NaiveDate};
+use chrono::NaiveDate;
 use crate::data::symbol::*;
-use crate::parsers::wse_parser::{self, *};
+use crate::parsers::wse_parser::{self};
 
 pub enum ParserType{
     WSE

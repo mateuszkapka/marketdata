@@ -5,7 +5,7 @@ use chrono::NaiveDate;
 use parsers::parser::*;
 
 use crate::data::event::Event;
-use crate::data::event_header::EventHeader;
+
 
 fn main() {
     let parser = parsers::parser::Parser{};
