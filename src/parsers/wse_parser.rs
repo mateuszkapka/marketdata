@@ -1,18 +1,174 @@
+use core::panic;
 use std::collections::HashMap;
+use std::io::{BufRead, BufReader};
 
-use chrono::NaiveDate;
+use chrono::{Datelike, NaiveDate, NaiveDateTime, NaiveTime};
+use crate::data::event::*;
 use crate::data::symbol::*;
+use std::fs::{self, DirEntry, File};
+use std::path::Path;
+use crate::data::trade::*;
+use crate::data::quote::*;
+use crate::data::event_header::*;
 
-pub struct WSEParser{
 
+pub struct WSEParser<'a>{
+    path_to_data: &'a str
 }
 
-impl WSEParser{
+impl<'a> WSEParser<'a>{
     pub fn new() -> Self{
-        WSEParser{}
+        WSEParser{
+            path_to_data:  "/Users/annakapka/Downloads/Sample_Warsaw_Kapka/",
+
+        }
     }
 
     pub(crate) fn parse_market_data(&self, date: &NaiveDate) -> HashMap<String,Symbol> {
-       !todo!()
+        let files_to_parse = self.get_files_to_parse(date);
+        let mut result: HashMap<String,Symbol> = HashMap::new();
+        
+        for file in files_to_parse{
+            self.process_symbol_file(file, & mut result, date);
+        }
+
+        // sort the results
+        for (_key,value) in & mut result{
+            value.events.sort_by(|a,b| NaiveDateTime::cmp(&a.get_timestamp(),&b.get_timestamp()))
+        }
+
+        result
+    }
+
+    fn get_files_from_subpath(&self, directory: &str) -> Vec<DirEntry>{
+        let mut result= Vec::new();
+        let final_path = Path::new(self.path_to_data).join(directory);
+        let final_path_str = final_path.clone();
+        let final_dir = fs::read_dir(final_path).expect(&format!("Unable to read folder {:?}", &final_path_str));
+        for file in final_dir{
+            result.push(file.unwrap())
+        }
+
+        result
+    }
+
+    fn get_files_to_parse(&self, date: &NaiveDate) -> Vec<DirEntry>{
+        let mut quotes = self.get_files_from_subpath(
+            format!("{}_{:0>2}_{:0>2}_Q", date.year(), date.month0() + 1, date.day0() + 1).as_str());
+        let mut trades = self.get_files_from_subpath(
+            format!("{}_{:0>2}_{:0>2}_T", date.year(), date.month0() + 1, date.day0() + 1).as_str());
+
+        quotes.append(& mut trades);
+        quotes
+
+    }
+
+    fn process_symbol_file(&self, file: DirEntry, result: & mut HashMap<String, Symbol>, date: &NaiveDate) {
+        let event = get_type_from_filename(&file);
+        let symbol = get_symbol_from_filename(&file);
+
+        let events : & mut Vec<Event>;
+            match result.get_mut(&symbol) {
+                Some(val)=> {
+                events = & mut val.events;
+                }
+                None=>{
+                    
+                    result.insert(symbol.clone(), Symbol::new(date, &symbol));
+                    events = & mut result.get_mut(&symbol).unwrap().events;
+                }
+        }
+
+        match event {
+            'Q' => {
+                let quotes = self.read_quotes(&file);
+                for quote in quotes{
+                    events.push(Event::Quote(quote));
+                }
+            },
+            'T' =>{
+                let trades = self.read_trades(&file);
+                for trade in trades{
+                    events.push(Event::Trade(trade));
+                }
+            },
+            _ => panic!("Invalid file type marker {}", event)
+        }
+    }
+
+    fn read_quotes(&self, file: &DirEntry) -> Vec<Quote> {
+        let mut result = Vec::new();
+        let file_handle =  match File::open(file.path()){
+            Ok(fh) => fh,
+            Err(err) => panic!("Unable to open file {:?}: {}", file.path(), err.to_string())
+        };
+
+        let reader = BufReader::new(file_handle);
+        for line_result in reader.lines(){
+            let line = line_result.unwrap();
+            let line_parts: Vec<&str> = line.split(",").into_iter().collect();
+            match line_parts.len() {
+                9 => {
+                    result.push(Quote { 
+                        quote_date: NaiveDate::parse_from_str(line_parts[0], "%m/%d/%Y").unwrap(), 
+                        quote_time: NaiveTime::parse_from_str(&line_parts[1][0..line_parts[1].len()-4], "%H:%M:%S").unwrap(),
+                        exchange_date: line_parts[2].to_string(),
+                        exchange_time: line_parts[3].to_string(),
+                        bid_price: line_parts[4].parse().unwrap_or_default(),
+                        bid_size: line_parts[5].parse().unwrap_or_default(),
+                        ask_price: line_parts[6].parse().unwrap_or_default(),
+                        ask_size: line_parts[7].parse().unwrap_or_default(),
+                        market_period: line_parts[8].to_string()
+                         });
+                }
+                _ => panic!("Invalid line format! Cannot parse line {}", line)
+            }
+        }
+
+        result
+    }
+
+    fn read_trades(&self, file: &DirEntry) ->  Vec<Trade> {
+        let mut result = Vec::new();
+        let file_handle =  match File::open(file.path()){
+            Ok(fh) => fh,
+            Err(err) => panic!("Unable to open file {:?}: {}", file.path(), err.to_string())
+        };
+
+        let reader = BufReader::new(file_handle);
+        for line_result in reader.lines(){
+            let line = line_result.unwrap();
+            let line_parts: Vec<&str> = line.split(",").into_iter().collect();
+            match line_parts.len() {
+                21 => {
+                    result.push(Trade{ 
+                        trade_date: NaiveDate::parse_from_str(line_parts[0], "%m/%d/%Y").unwrap(), 
+                        trade_time: NaiveTime::parse_from_str(&line_parts[1][0..line_parts[1].len()-4], "%H:%M:%S").unwrap(),
+                        exchange_date: line_parts[2].to_string(),
+                        exchange_time: line_parts[3].to_string(),
+                        price: line_parts[5].parse().unwrap_or_default(),
+                        volume: line_parts[6].parse().unwrap_or_default()
+                     });
+                }
+                _ => panic!("Invalid line format! Cannot parse line {}", line)
+            }
+        }
+
+        result
     }
 }
+
+fn get_symbol_from_filename(file: &DirEntry) -> String {
+    let filename = file.file_name();
+    let mut parts = filename.to_str().unwrap().split("_");
+    let symbol = parts.nth(0).expect(format!("Unable to parse event type from file '{:?}'. Not enough parts", &file.path()).as_str());
+    symbol.to_string()
+}
+
+fn get_type_from_filename(file: &DirEntry) -> char {
+    let filename = file.file_name();
+    let mut parts = filename.to_str().unwrap().split("_");
+    let event_type = parts.nth(4).expect(format!("Unable to parse event type from file '{:?}'. Not enough parts", &file.path()).as_str());
+    event_type.chars().nth(0).unwrap()
+
+    }
