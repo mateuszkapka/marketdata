@@ -26,6 +26,7 @@ impl BaseWriter for ParquetWriter{
             Field::new("market_period", DataType::Utf8, true),
             Field::new("trade_price", DataType::Float64, true),
             Field::new("trade_volume", DataType::Int64, true),
+            Field::new("type", DataType::Utf8, true),
         ]);
 
         let mut writer = ArrowWriter::try_new(File::create( &Path::new( "test.parquet" ) ).unwrap(), 
@@ -46,9 +47,11 @@ impl BaseWriter for ParquetWriter{
             let mut market_period_data: Vec<Option<&str>> = Vec::new();
             let mut trade_price_data: Vec<Option<f64>> = Vec::new();
             let mut trade_volume_data: Vec<Option<i64>> = Vec::new();
+            let mut type_data: Vec<&str> = Vec::new();
 
             for event in events_chunk {
                 timestamp_data.push(event.get_timestamp().timestamp_millis());
+                type_data.push(event.get_type());
                 match event {
                     Event::Quote(quote)  => {
                         bid_price_data.push(Some(quote.bid_price));
@@ -81,6 +84,7 @@ impl BaseWriter for ParquetWriter{
             let market_periods = StringArray::from(market_period_data);
             let trade_prices = Float64Array::from(trade_price_data);
             let trade_volumes = Int64Array::from(trade_volume_data);
+            let types = StringArray::from(type_data);
 
             let batch = RecordBatch::try_from_iter(vec![
                 ("timestamp", Arc::new(timestamps) as ArrayRef),
@@ -91,6 +95,7 @@ impl BaseWriter for ParquetWriter{
                 ("market_period", Arc::new(market_periods) as ArrayRef),
                 ("trade_price", Arc::new(trade_prices) as ArrayRef),
                 ("trade_volume", Arc::new(trade_volumes) as ArrayRef),
+                ("type", Arc::new(types) as ArrayRef),
                 ]).unwrap();
 
             writer.write(&batch).expect("Unable to write the next batch!");

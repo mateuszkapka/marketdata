@@ -15,6 +15,12 @@ impl EventHeader for Event{
             Event::Trade(trade) => NaiveDateTime::new(trade.trade_date, trade.trade_time),
             Event::Quote(quote) => NaiveDateTime::new(quote.quote_date, quote.quote_time)
         }
-        
+    }
+
+    fn get_type(&self) -> &str{
+        match self {
+            Event::Trade(_) => "Trade",
+            Event::Quote(_) => "Quote"
+        }
     }
 }
