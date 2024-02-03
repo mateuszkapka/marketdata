@@ -10,6 +10,8 @@ path = "src/main.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+arrow = "50.0.0"
+parquet = "50.0.0"
 chrono = "0.4.33"
 
 

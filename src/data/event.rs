@@ -1,6 +1,6 @@
 use crate::data::trade::*;
 use crate::data::quote::*;
-use chrono::{NaiveDateTime};
+use chrono::NaiveDateTime;
 
 use crate::data::event_header::*;
 

@@ -1,6 +1,5 @@
 use chrono::{NaiveTime, NaiveDate};
 
-
 pub struct Quote{
     pub quote_date: NaiveDate,
     pub quote_time: NaiveTime,

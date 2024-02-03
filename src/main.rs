@@ -1,10 +1,12 @@
 mod data;
 mod parsers;
+mod writers;
 
 use chrono::NaiveDate;
 use parsers::parser::*;
+use writers::*;
 
-use crate::data::event::Event;
+use crate::{base_writer::BaseWriter, parquet_writer::ParquetWriter};
 
 
 fn main() {
@@ -12,16 +14,8 @@ fn main() {
     let date = NaiveDate::from_ymd_opt(2024, 01, 22).unwrap();
     let result = parser.parse_market_data(&date, ParserType::WSE);
 
-    for (key,value) in result{
-        println!("Symbol: {}", key);
-        for event in value.events{
-            match &event {
-                Event::Trade(trade) => println!("{} : T", trade.trade_time),
-                Event::Quote(quote) => println!("{} : Q", quote.quote_time),
-
-            }
-        }
-    }
+    let writer = ParquetWriter{};
+    writer.write_symbol(&result);
 
     println!("Hello, world!");
 }
