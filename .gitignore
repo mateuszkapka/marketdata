@@ -1,3 +1,7 @@
 /target
 test.parquet
 .ipynb_checkpoints/MarketData-checkpoint.ipynb
+WSE_marketdata.parquet
+WSE_symbology.parquet
+*.pyc
+*.pyo

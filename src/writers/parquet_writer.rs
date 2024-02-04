@@ -12,7 +12,7 @@ pub struct ParquetWriter{
 }
 
 impl BaseWriter for ParquetWriter{
-    fn write_symbol(&self, dataset: &HashMap<String, Symbol>){   
+    fn write_matket_data(&self, dataset: &HashMap<String, Symbol>, result_filename: &str){   
         let props = WriterProperties::builder()
             .set_compression(Compression::ZSTD(<ZstdLevel as std::default::Default>::default()))
             .build();
@@ -30,7 +30,7 @@ impl BaseWriter for ParquetWriter{
             Field::new("type", DataType::Utf8, true),
         ]);
 
-        let mut writer = ArrowWriter::try_new(File::create( &Path::new( "test.parquet" ) ).unwrap(), 
+        let mut writer = ArrowWriter::try_new(File::create( &Path::new( result_filename ) ).unwrap(), 
                         Arc::new(schema), Some(props)).unwrap();
         
         println!("Writing data...");
@@ -107,6 +107,28 @@ impl BaseWriter for ParquetWriter{
 
         }
         
+        writer.close().unwrap();
+    }
+
+    fn write_symbology(&self, symbols: &Vec<String>, result_filename: &str) {
+        let props = WriterProperties::builder()
+        .set_compression(Compression::ZSTD(<ZstdLevel as std::default::Default>::default()))
+        .build();
+
+        let schema = Schema::new(vec![
+            Field::new("symbol", DataType::Utf8, true),
+        ]);
+
+        let mut writer = ArrowWriter::try_new(File::create( &Path::new( result_filename ) ).unwrap(), 
+                        Arc::new(schema), Some(props)).unwrap();
+
+        let symbols = StringArray::from(symbols.clone());
+        
+        let batch = RecordBatch::try_from_iter(vec![
+            ("symbol", Arc::new(symbols) as ArrayRef),
+            ]).unwrap();
+
+        writer.write(&batch).expect("Unable to write the next batch!");
         writer.close().unwrap();
     }
 }

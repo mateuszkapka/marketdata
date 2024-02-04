@@ -8,14 +8,18 @@ use writers::*;
 
 use crate::{base_writer::BaseWriter, parquet_writer::ParquetWriter};
 
-
 fn main() {
     let parser = parsers::parser::Parser{};
     let date = NaiveDate::from_ymd_opt(2024, 01, 22).unwrap();
     let result = parser.parse_market_data(&date, ParserType::WSE);
 
-    let writer = ParquetWriter{};
-    writer.write_matket_data(&result, "WSE_marketdata.parquet");
+    let mut symbols: Vec<String> = Vec::new();
+    for (key,_value) in result{
+        symbols.push(key.clone());
+    }
 
-    println!("Hello, world!");
+    let writer = ParquetWriter{};
+    writer.write_symbology(&symbols, "WSE_symbology.parquet");
+
+    println!("Symbology running!");
 }
