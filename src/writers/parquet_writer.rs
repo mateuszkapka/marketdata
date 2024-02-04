@@ -19,6 +19,7 @@ impl BaseWriter for ParquetWriter{
 
         let schema = Schema::new(vec![
             Field::new("timestamp", DataType::Timestamp(arrow::datatypes::TimeUnit::Millisecond, None), false),
+            Field::new("symbol", DataType::Utf8, true),
             Field::new("bid_price", DataType::Float64, true),
             Field::new("bid_size", DataType::Int64, true),
             Field::new("ask_price", DataType::Float64, true),
@@ -40,6 +41,7 @@ impl BaseWriter for ParquetWriter{
             let events_chunk = value.events.chunks(10000).flatten();
             
             let mut timestamp_data: Vec<i64> = Vec::new();
+            let mut symbol_data: Vec<&str> = Vec::new();
             let mut bid_price_data: Vec<Option<f64>> = Vec::new();
             let mut bid_size_data: Vec<Option<i64>> = Vec::new();
             let mut ask_price_data: Vec<Option<f64>> = Vec::new();
@@ -51,6 +53,7 @@ impl BaseWriter for ParquetWriter{
 
             for event in events_chunk {
                 timestamp_data.push(event.get_timestamp().timestamp_millis());
+                symbol_data.push(&key);
                 type_data.push(event.get_type());
                 match event {
                     Event::Quote(quote)  => {
@@ -77,6 +80,7 @@ impl BaseWriter for ParquetWriter{
              
 
             let timestamps = TimestampMillisecondArray::from(timestamp_data);
+            let symbols = StringArray::from(symbol_data);
             let bid_prices = Float64Array::from(bid_price_data);
             let bid_sizes = Int64Array::from(bid_size_data);
             let ask_prices = Float64Array::from(ask_price_data);
@@ -88,6 +92,7 @@ impl BaseWriter for ParquetWriter{
 
             let batch = RecordBatch::try_from_iter(vec![
                 ("timestamp", Arc::new(timestamps) as ArrayRef),
+                ("symbol", Arc::new(symbols) as ArrayRef),
                 ("bid_price", Arc::new(bid_prices) as ArrayRef),
                 ("bid_size", Arc::new(bid_sizes) as ArrayRef),
                 ("ask_price", Arc::new(ask_prices) as ArrayRef),
