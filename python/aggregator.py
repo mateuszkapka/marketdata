@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+    #!/usr/bin/env python
 from abc import abstractmethod
 from collections import namedtuple
 from typing import NamedTuple, Type

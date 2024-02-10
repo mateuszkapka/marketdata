@@ -19,7 +19,7 @@ pub struct WSEParser<'a>{
 impl<'a> WSEParser<'a>{
     pub fn new() -> Self{
         WSEParser{
-            path_to_data:  "/Users/annakapka/Downloads/Sample_Warsaw_Kapka/",
+            path_to_data:  "../WSE_Data/Sample_Warsaw_Kapka",
 
         }
     }
