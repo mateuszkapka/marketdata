@@ -8,6 +8,8 @@ import pandas as pd
 
 from data import Quote, Trade
 from filters import Filter, NoopFilter
+from regionConfig.WSE import WSE
+from regionConfig.base import RegionConfig
 from schedule import WallClockSliceSchedule
 
 class Aggregate():
@@ -25,10 +27,13 @@ class Aggregate():
         pass
 
 class Aggregator:
-    def __init__(self, market_data_path: str,symbology_path: str, filter: Filter = NoopFilter()):
+    def __init__(self, market_data_path: str,symbology_path: str,
+                 region: RegionConfig = WSE(),
+                 filter: Filter = NoopFilter()):
         self.market_data_path = market_data_path
         self.aggregates = {}
         self.aggregate_values = {}
+        self.region = region
         self.slice_schedule = WallClockSliceSchedule(time(hour=9, minute=00),
                                                      time(hour=15, minute=50),
                                                      timedelta(minutes=5),
@@ -43,7 +48,7 @@ class Aggregator:
 
     def registerAggregate(self, aggregate: Type):
         for symbol in self.symbology:
-            self.aggregates.setdefault(symbol, []).append(aggregate())
+            self.aggregates.setdefault(symbol, []).append(aggregate(self.region, symbol))
 
     def run(self):
         df = pd.read_parquet(self.market_data_path, engine='pyarrow')

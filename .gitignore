@@ -7,3 +7,9 @@ WSE_symbology.parquet
 *.pyo
 python/__pycache__/*
 python/.idea/*
+.~lock.tick_tables_wse.csv#
+Shares_ETFs_tick_table_2023 (1).xlsx
+test.data
+python/.idea/misc.xml
+python/.idea/python.iml
+python/.ipynb_checkpoints/MarketData-checkpoint.ipynb

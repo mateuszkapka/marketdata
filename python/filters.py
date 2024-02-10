@@ -8,7 +8,7 @@ class Filter:
 
 class NoopFilter(Filter):
     def shouldFilter(self, row):
-        return True
+        return False
 
 class SymbolFilter(Filter):
     def __init__(self, symbol: str):
