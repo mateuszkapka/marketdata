@@ -1,12 +1,12 @@
 use core::panic;
-use std::collections::HashMap;
+
 use std::io::{BufRead, BufReader};
 
 use crate::data::event_header::*;
 use crate::data::quote::*;
-use crate::data::symbol::*;
+
 use crate::data::trade::*;
-use crate::data::{event::*, symbol};
+use crate::data::event::*;
 use chrono::{Datelike, NaiveDate, NaiveDateTime, NaiveTime};
 use std::fs::{self, DirEntry, File};
 use std::path::Path;
@@ -72,7 +72,7 @@ impl<'a> WSEParser<'a> {
         quotes
     }
 
-    fn process_symbol_file(&self, file: DirEntry, events: &mut Vec<Event>, date: &NaiveDate) {
+    fn process_symbol_file(&self, file: DirEntry, events: &mut Vec<Event>, _date: &NaiveDate) {
         let event = get_type_from_filename(&file);
         let symbol = get_symbol_from_filename(&file);
 

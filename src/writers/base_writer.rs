@@ -1,6 +1,6 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
-use crate::data::{event::Event, symbol::Symbol};
+use crate::data::event::Event;
 
 pub trait BaseWriter {
     fn write_matket_data(&self, dataset: &Vec<Event>, result_filename: &str);

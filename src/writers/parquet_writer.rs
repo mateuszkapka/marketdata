@@ -1,7 +1,7 @@
 extern crate parquet;
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     fs::File,
     path::Path,
     sync::Arc,
@@ -18,7 +18,7 @@ use parquet::{
 };
 
 use crate::{
-    data::{event::Event, event_header::EventHeader, symbol::Symbol},
+    data::{event::Event, event_header::EventHeader},
     writers::base_writer::*,
 };
 
