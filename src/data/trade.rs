@@ -1,7 +1,7 @@
-use chrono::{ NaiveTime, NaiveDate};
+use chrono::{NaiveDate, NaiveTime};
 
-
-pub struct Trade{
+pub struct Trade {
+    pub symbol: String,
     pub trade_date: NaiveDate,
     pub trade_time: NaiveTime,
     pub exchange_date: String,

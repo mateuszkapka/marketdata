@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-use crate::data::symbol::Symbol;
+use crate::data::{event::Event, symbol::Symbol};
 
-pub trait BaseWriter{
-    fn write_matket_data(&self, dataset: &HashMap<String, Symbol>, result_filename: &str);
-    fn write_symbology(&self, symbols: &Vec<String>, result_filename: &str);
+pub trait BaseWriter {
+    fn write_matket_data(&self, dataset: &Vec<Event>, result_filename: &str);
+    fn write_symbology(&self, symbols: &HashSet<String>, result_filename: &str);
 }
