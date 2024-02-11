@@ -13,7 +13,6 @@ class SpreadByTickSizeAggregate(aggregator.Aggregate):
         self.last_ask = 0.0
         self.region = region
         self.tick_series = []
-        self.symbol = symbol
 
     def on_quote(self, quote):
         self.spread = quote.ask_price - quote.bid_price
@@ -22,12 +21,8 @@ class SpreadByTickSizeAggregate(aggregator.Aggregate):
         tick_size = self.region.get_tick_size(trade.trade_price, trade.symbol)
         if tick_size != 0:
             self.tick_series.append(self.spread / tick_size)
-            if self.symbol == "PKO":
-                x = 5
 
     def compute_slice(self, slice):
-        if self.symbol == "PKO":
-                x = 5
         if len(self.tick_series) == 0:
             return 0
 
@@ -54,7 +49,8 @@ class testAggregate(aggregator.Aggregate):
 
 agg = aggregator.Aggregator("../WSE_marketdata.parquet",
                             "../WSE_symbology.parquet",
-                            WSE())
+                            WSE(),
+                            filters.SymbolFilter("DTR"))
 agg.registerAggregate(SpreadByTickSizeAggregate)
 result = agg.run()
 x = 1
