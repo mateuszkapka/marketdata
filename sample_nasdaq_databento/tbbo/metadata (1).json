@@ -1,0 +1,28 @@
+{
+    "version": 1,
+    "job_id": "XNAS-20240211-STYXB3FKHV",
+    "query": {
+        "dataset": "XNAS.ITCH",
+        "schema": "tbbo",
+        "symbols": [
+            "ALL_SYMBOLS"
+        ],
+        "stype_in": "raw_symbol",
+        "stype_out": "instrument_id",
+        "start": 1705881600000000000,
+        "end": 1705968000000000000,
+        "limit": null,
+        "encoding": "dbn",
+        "compression": "zstd"
+    },
+    "customizations": {
+        "pretty_px": false,
+        "pretty_ts": false,
+        "map_symbols": false,
+        "split_symbols": false,
+        "split_duration": "day",
+        "split_size": null,
+        "packaging": null,
+        "delivery": "download"
+    }
+}
