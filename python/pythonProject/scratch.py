@@ -5,8 +5,9 @@ import pyarrow.parquet as pq
 import databento as db
 import json
 
-file = 'xnas-itch-20240122.mbp-1.dbn.zst'
-path = f'/Users/stephaniejury/marketdata/sample_nasdaq_databento/{file}'
+mbp_file = 'mbp/xnas-itch-20240122.mbp-1.dbn.zst'
+tbbo_file = 'tbbo/xnas-itch-20240122.tbbo.dbn.zst'
+path = f'/Users/stephaniejury/marketdata/sample_nasdaq_databento/{tbbo_file}'
 
 
 # # Read saved .dbn.zst
@@ -23,10 +24,9 @@ path = f'/Users/stephaniejury/marketdata/sample_nasdaq_databento/{file}'
 parquet_file = pq.ParquetFile('nasdaq.parquet')
 
 # Read the first 10 rows
-first_10_rows = parquet_file.read().to_pandas().head(10)
+df = parquet_file.read().to_pandas()
 
-# Print the first 10 rows
-print(first_10_rows)
+a=1
 
 # file = 'metadata.json'
 # file = 'condition.json'
