@@ -1,11 +1,9 @@
-use chrono::{NaiveDate, NaiveTime};
+use chrono::NaiveDateTime;
 
 pub struct Quote {
     pub symbol: String,
-    pub quote_date: NaiveDate,
-    pub quote_time: NaiveTime,
+    pub quote_date: NaiveDateTime,
     pub exchange_date: String,
-    pub exchange_time: String,
     pub bid_price: f64,
     pub bid_size: i64,
     pub ask_price: f64,

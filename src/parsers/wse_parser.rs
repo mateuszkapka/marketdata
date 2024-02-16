@@ -106,16 +106,16 @@ impl<'a> WSEParser<'a> {
             let line_parts: Vec<&str> = line.split(",").into_iter().collect();
             match line_parts.len() {
                 9 => {
+                    let date = NaiveDate::parse_from_str(line_parts[0], "%m/%d/%Y").unwrap();
+                    let time = NaiveTime::parse_from_str(
+                        &line_parts[1][0..line_parts[1].len() - 4],
+                        "%H:%M:%S",
+                    )
+                    .unwrap();
                     result.push(Quote {
                         symbol: symbol.to_string(),
-                        quote_date: NaiveDate::parse_from_str(line_parts[0], "%m/%d/%Y").unwrap(),
-                        quote_time: NaiveTime::parse_from_str(
-                            &line_parts[1][0..line_parts[1].len() - 4],
-                            "%H:%M:%S",
-                        )
-                        .unwrap(),
+                        quote_date: NaiveDateTime::new(date, time),
                         exchange_date: line_parts[2].to_string(),
-                        exchange_time: line_parts[3].to_string(),
                         bid_price: line_parts[4].parse().unwrap_or_default(),
                         bid_size: line_parts[5].parse().unwrap_or_default(),
                         ask_price: line_parts[6].parse().unwrap_or_default(),

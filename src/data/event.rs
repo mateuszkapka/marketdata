@@ -13,7 +13,7 @@ impl EventHeader for Event {
     fn get_timestamp(&self) -> NaiveDateTime {
         match self {
             Event::Trade(trade) => NaiveDateTime::new(trade.trade_date, trade.trade_time),
-            Event::Quote(quote) => NaiveDateTime::new(quote.quote_date, quote.quote_time),
+            Event::Quote(quote) => quote.quote_date
         }
     }
 
