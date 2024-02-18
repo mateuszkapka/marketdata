@@ -1,11 +1,9 @@
-use chrono::{NaiveDate, NaiveTime};
+use chrono::NaiveDateTime;
 
 pub struct Trade {
     pub symbol: String,
-    pub trade_date: NaiveDate,
-    pub trade_time: NaiveTime,
+    pub trade_timestamp: NaiveDateTime,
     pub exchange_date: String,
-    pub exchange_time: String,
     pub price: f64,
     pub volume: i64,
     // pub sales_condition: String,

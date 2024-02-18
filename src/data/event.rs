@@ -12,7 +12,7 @@ pub enum Event {
 impl EventHeader for Event {
     fn get_timestamp(&self) -> NaiveDateTime {
         match self {
-            Event::Trade(trade) => NaiveDateTime::new(trade.trade_date, trade.trade_time),
+            Event::Trade(trade) => trade.trade_timestamp,
             Event::Quote(quote) => quote.quote_date
         }
     }

@@ -143,16 +143,17 @@ impl<'a> WSEParser<'a> {
             let line_parts: Vec<&str> = line.split(",").into_iter().collect();
             match line_parts.len() {
                 21 => {
+                    let trade_date= NaiveDate::parse_from_str(line_parts[0], "%m/%d/%Y").unwrap();
+                    let trade_time =  NaiveTime::parse_from_str(
+                        &line_parts[1][0..line_parts[1].len() - 4],
+                        "%H:%M:%S",
+                    )
+                    .unwrap();
+
                     result.push(Trade {
                         symbol: symbol.to_string(),
-                        trade_date: NaiveDate::parse_from_str(line_parts[0], "%m/%d/%Y").unwrap(),
-                        trade_time: NaiveTime::parse_from_str(
-                            &line_parts[1][0..line_parts[1].len() - 4],
-                            "%H:%M:%S",
-                        )
-                        .unwrap(),
+                        trade_timestamp: NaiveDateTime::new(trade_date, trade_time),
                         exchange_date: line_parts[2].to_string(),
-                        exchange_time: line_parts[3].to_string(),
                         price: line_parts[5].parse().unwrap_or_default(),
                         volume: line_parts[6].parse().unwrap_or_default(),
                     });

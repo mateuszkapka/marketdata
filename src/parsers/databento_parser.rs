@@ -3,16 +3,18 @@ use std::collections::HashMap;
 use std::fs;
 
 use chrono::{NaiveDate, NaiveDateTime};
+use databento::dbn::decode::{DbnDecoder, DecodeRecordRef};
 use databento::dbn::RecordRefEnum;
-use databento::historical::timeseries::AsyncDbnDecoder;
 use crate::data::event::*;
+use crate::data::event_header::EventHeader;
 use crate::data::quote::Quote;
-use futures::executor::block_on;
+use crate::data::trade::Trade;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct NasdaqParser<'a>{
-    path_to_data: &'a str,
+    path_to_quotes: &'a str,
+    path_to_trades: &'a str,
     path_to_symbology: &'a str
 }
 
@@ -32,7 +34,8 @@ pub struct NasdaqSymbology{
 impl<'a> NasdaqParser<'a>{
     pub fn new() -> Self{
         NasdaqParser{
-            path_to_data: "Sample_Warsaw_Kapka/xnas-itch-20240122.mbp-1.dbn.zst",
+            path_to_quotes: "sample_nasdaq_databento/mbp/xnas-itch-20240122.mbp-1.dbn.zst",
+            path_to_trades: "sample_nasdaq_databento/tbbo/xnas-itch-20240122.tbbo.dbn.zst",
             path_to_symbology: "sample_nasdaq_databento/tbbo/symbology (1).json"
         }
     }
@@ -52,12 +55,9 @@ impl<'a> NasdaqParser<'a>{
         result
     }
 
-    fn parse_single_file(&self, _date: &NaiveDate, result: & mut Vec<Event>, symbology: &HashMap<u32, String>){
-        let mut decoder = block_on(AsyncDbnDecoder::from_zstd_file(self.path_to_data)).unwrap();
-       
-        
-         while let Some(r) = block_on(decoder.decode_record_ref()).unwrap() {
-            
+    fn parse_single_file(&self, _date: &NaiveDate, symbology: &HashMap<u32, String>, path_to_data: &str, result: &mut Vec<Event>) {
+        let mut decoder = DbnDecoder::from_zstd_file(path_to_data).unwrap();
+         while let Some(r) = decoder.decode_record_ref().unwrap() {
             match r.as_enum().unwrap(){
                 RecordRefEnum::Mbp1(mbp) => {
                     let timestamp = NaiveDateTime::from_timestamp_micros(mbp.hd.ts_event as i64).unwrap();
@@ -72,6 +72,16 @@ impl<'a> NasdaqParser<'a>{
                         market_period: "".to_string()
                     }))
                 },
+                RecordRefEnum::Trade(msg) => {
+                    let timestamp = NaiveDateTime::from_timestamp_micros(msg.hd.ts_event as i64).unwrap();
+                    result.push(Event::Trade(Trade{
+                        symbol: symbology.get(&msg.hd.instrument_id).unwrap().to_string(),
+                        exchange_date:  timestamp.to_string(),
+                        price: msg.price as f64 * 0.000000001,
+                        trade_timestamp: timestamp,
+                        volume: msg.size as i64
+                    }))
+                },
                 _ => panic!("no clue")
             }
         }
@@ -80,9 +90,14 @@ impl<'a> NasdaqParser<'a>{
     pub(crate) fn parse_market_data(&self, date: &NaiveDate) -> Vec<Event> {
         let mut result: Vec<Event> = Vec::new();
 
-        let symbology = self.load_symbology(date);
-        self.parse_single_file(date, &mut result, &symbology);
+        let symbology: HashMap<u32, String> = self.load_symbology(date);
 
+        println!("Reading trades..");
+        self.parse_single_file(&date, &symbology, self.path_to_trades, &mut result);
+        println!("Reading quotes..");
+        self.parse_single_file(&date, &symbology, self.path_to_quotes, &mut result);
+        
+        result.sort_by(|a, b| NaiveDateTime::cmp(&a.get_timestamp(), &b.get_timestamp()));
         result
     }
 }

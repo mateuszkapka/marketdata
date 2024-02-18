@@ -20,3 +20,5 @@ sample_nasdaq_databento/mbp/xnas-itch-20240122.mbp-1.dbn.zst
 sample_nasdaq_databento/tbbo/xnas-itch-20240122.tbbo.dbn.zst
 python/pythonProject/nasdaq.parquet
 python/pythonProject/nasdaqtbbo.parquet
+Nasdaq.parquet
+normalised_data

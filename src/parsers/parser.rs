@@ -1,5 +1,7 @@
 
 
+use std::str::FromStr;
+
 use crate::data::event::Event;
 
 use crate::parsers::wse_parser::{self};
@@ -11,6 +13,18 @@ use super::databento_parser;
 pub enum ParserType {
     WSE,
     NASDAQ
+}
+
+impl FromStr for ParserType {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<ParserType, Self::Err> {
+        match input {
+            "WSE"  => Ok(ParserType::WSE),
+            "NASDAQ"  => Ok(ParserType::NASDAQ),
+            _      => Err(()),
+        }
+    }
 }
 
 pub struct Parser {}
