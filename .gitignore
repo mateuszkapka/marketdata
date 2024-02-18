@@ -22,3 +22,4 @@ python/pythonProject/nasdaq.parquet
 python/pythonProject/nasdaqtbbo.parquet
 Nasdaq.parquet
 normalised_data
+perf.data

@@ -1,7 +1,9 @@
 
 
+use std::rc::Rc;
 use std::str::FromStr;
 
+use crate::base_writer::BaseWriter;
 use crate::data::event::Event;
 
 use crate::parsers::wse_parser::{self};
@@ -30,14 +32,14 @@ impl FromStr for ParserType {
 pub struct Parser {}
 
 impl Parser {
-    pub fn parse_market_data(&self, date: &NaiveDate, parser_type: ParserType) -> Vec<Event> {
+    pub fn parse_market_data(&self, date: &NaiveDate, parser_type: ParserType, writer: & mut Box<dyn BaseWriter>){
         match parser_type {
             ParserType::WSE => {
-                let parser = wse_parser::WSEParser::new();
+                let mut parser = wse_parser::WSEParser::new(writer);
                 parser.parse_market_data(date)
             },
             ParserType::NASDAQ => {
-                let parser = databento_parser::NasdaqParser::new();
+                let mut parser = databento_parser::NasdaqParser::new(writer);
                 parser.parse_market_data(date)
             }
         }

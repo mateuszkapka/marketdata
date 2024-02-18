@@ -22,16 +22,12 @@ use crate::{
     writers::base_writer::*,
 };
 
-pub struct ParquetWriter {}
+pub struct ParquetWriter {
+    writer: ArrowWriter<File>
+}
 
-impl BaseWriter for ParquetWriter {
-    fn write_matket_data(&self, dataset: &Vec<Event>, result_filename: &str) {
-        let props = WriterProperties::builder()
-            .set_compression(Compression::ZSTD(
-                <ZstdLevel as std::default::Default>::default(),
-            ))
-            .build();
-
+impl ParquetWriter{
+    pub fn new(result_filename: String) -> Self{
         let schema = Schema::new(vec![
             Field::new(
                 "timestamp",
@@ -49,13 +45,28 @@ impl BaseWriter for ParquetWriter {
             Field::new("type", DataType::Utf8, true),
         ]);
 
+        let props = WriterProperties::builder()
+        .set_compression(Compression::ZSTD(
+            <ZstdLevel as std::default::Default>::default(),
+        ))
+        .build();
+
+
         let mut writer = ArrowWriter::try_new(
-            File::create(&Path::new(result_filename)).unwrap(),
+            File::create(&Path::new(&result_filename)).unwrap(),
             Arc::new(schema),
             Some(props),
         )
         .unwrap();
 
+        ParquetWriter{
+            writer
+        }
+    }
+}
+
+impl BaseWriter for ParquetWriter {
+    fn write_matket_data(&mut self, dataset: &Vec<Event>) {
         println!("Writing data...");
         let mut index = 0;
         let chunk_size = 10000;
@@ -125,39 +136,42 @@ impl BaseWriter for ParquetWriter {
             ])
             .unwrap();
 
-            writer
+            self.writer
                 .write(&batch)
                 .expect("Unable to write the next batch!");
         }
-
-        writer.close().unwrap();
     }
 
-    fn write_symbology(&self, symbols: &HashSet<String>, result_filename: &str) {
-        let props = WriterProperties::builder()
-            .set_compression(Compression::ZSTD(
-                <ZstdLevel as std::default::Default>::default(),
-            ))
-            .build();
+    fn write_symbology(&self, symbols: &HashSet<String>) {
+        // let props = WriterProperties::builder()
+        //     .set_compression(Compression::ZSTD(
+        //         <ZstdLevel as std::default::Default>::default(),
+        //     ))
+        //     .build();
 
-        let schema = Schema::new(vec![Field::new("symbol", DataType::Utf8, true)]);
+        // let schema = Schema::new(vec![Field::new("symbol", DataType::Utf8, true)]);
 
-        let mut writer = ArrowWriter::try_new(
-            File::create(&Path::new(result_filename)).unwrap(),
-            Arc::new(schema),
-            Some(props),
-        )
-        .unwrap();
+        // let mut writer = ArrowWriter::try_new(
+        //     File::create(&Path::new(&self.result_filename)).unwrap(),
+        //     Arc::new(schema),
+        //     Some(props),
+        // )
+        // .unwrap();
 
-        let symbols = StringArray::from_iter_values(symbols);
+        // let symbols = StringArray::from_iter_values(symbols);
 
-        let batch =
-            RecordBatch::try_from_iter(vec![("symbol", Arc::new(symbols) as ArrayRef)]).unwrap();
+        // let batch =
+        //     RecordBatch::try_from_iter(vec![("symbol", Arc::new(symbols) as ArrayRef)]).unwrap();
 
-        writer
-            .write(&batch)
-            .expect("Unable to write the next batch!");
-        writer.close().unwrap();
+        // writer
+        //     .write(&batch)
+        //     .expect("Unable to write the next batch!");
+        // writer.close().unwrap();
     }
 }
 
+impl Drop for ParquetWriter{
+    fn drop(&mut self) {
+        self.writer.flush();
+    }
+}

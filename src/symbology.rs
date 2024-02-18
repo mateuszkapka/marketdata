@@ -9,10 +9,10 @@ use writers::*;
 use crate::{
     base_writer::BaseWriter, data::event_header::EventHeader, parquet_writer::ParquetWriter,
 };
-use std::{collections::HashSet, process::exit, str::FromStr};
+use std::{collections::HashSet, process::exit, rc::Rc, str::FromStr};
 
 fn main() {
-    let parser = parsers::parser::Parser {};
+    
     let date = NaiveDate::from_ymd_opt(2024, 01, 22).unwrap();
 
     let cmd = clap::Command::new("raw")
@@ -27,21 +27,15 @@ fn main() {
         Some(m) => m.clone(),
         None =>{
             exit(0);
-            "".to_string()
         }
     };
     let source = ParserType::from_str(&source_str).expect("Invalid value for argument source!");
+    let parser = parsers::parser::Parser {};
+    let writer = Rc::new(ParquetWriter::new(
+        format!("normalised_data/{}_symbology.parquet", &source_str).to_string()
+    ));
 
-
-    let result = parser.parse_market_data(&date, source);
-
-    let mut symbols: HashSet<String> = HashSet::new();
-    for event in result {
-        symbols.insert(event.get_symbol().to_string());
-    }
-
-    let writer = ParquetWriter {};
-    writer.write_symbology(&symbols, &format!("normalised_data/{}_symbology.parquet", source_str));
+    //let result = parser.parse_market_data(&date, source);
 
     println!("Symbology running!");
 }

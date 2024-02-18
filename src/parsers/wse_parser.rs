@@ -1,7 +1,9 @@
 use core::panic;
 
 use std::io::{BufRead, BufReader};
+use std::rc::Rc;
 
+use crate::base_writer::BaseWriter;
 use crate::data::event_header::*;
 use crate::data::quote::*;
 
@@ -13,16 +15,18 @@ use std::path::Path;
 
 pub struct WSEParser<'a> {
     path_to_data: &'a str,
+    writer: &'a mut Box<dyn BaseWriter>
 }
 
 impl<'a> WSEParser<'a> {
-    pub fn new() -> Self {
+    pub fn new(writer: &'a mut Box<dyn BaseWriter>) -> Self {
         WSEParser {
             path_to_data: "../WSE_Data/Sample_Warsaw_Kapka",
+            writer: writer
         }
     }
 
-    pub(crate) fn parse_market_data(&self, date: &NaiveDate) -> Vec<Event> {
+    pub(crate) fn parse_market_data(&mut self, date: &NaiveDate) {
         let files_to_parse = self.get_files_to_parse(date);
         let mut result: Vec<Event> = Vec::new();
 
@@ -32,7 +36,7 @@ impl<'a> WSEParser<'a> {
 
         result.sort_by(|a, b| NaiveDateTime::cmp(&a.get_timestamp(), &b.get_timestamp()));
 
-        result
+        self.writer.write_matket_data(&result);
     }
 
     fn get_files_from_subpath(&self, directory: &str) -> Vec<DirEntry> {
