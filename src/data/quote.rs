@@ -1,5 +1,6 @@
 use chrono::NaiveDateTime;
 
+#[derive(Debug)]
 pub struct Quote {
     pub symbol: String,
     pub quote_date: NaiveDateTime,

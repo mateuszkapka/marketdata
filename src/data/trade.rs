@@ -1,5 +1,6 @@
 use chrono::NaiveDateTime;
 
+#[derive(Debug)]
 pub struct Trade {
     pub symbol: String,
     pub trade_timestamp: NaiveDateTime,

@@ -1,7 +1,7 @@
 use core::panic;
 
 use std::io::{BufRead, BufReader};
-use std::rc::Rc;
+
 
 use crate::base_writer::BaseWriter;
 use crate::data::event_header::*;
@@ -9,17 +9,18 @@ use crate::data::quote::*;
 
 use crate::data::trade::*;
 use crate::data::event::*;
+use crate::parquet_writer::ParquetWriter;
 use chrono::{Datelike, NaiveDate, NaiveDateTime, NaiveTime};
 use std::fs::{self, DirEntry, File};
 use std::path::Path;
 
 pub struct WSEParser<'a> {
     path_to_data: &'a str,
-    writer: &'a mut Box<dyn BaseWriter>
+    writer: &'a mut Box<ParquetWriter>
 }
 
 impl<'a> WSEParser<'a> {
-    pub fn new(writer: &'a mut Box<dyn BaseWriter>) -> Self {
+    pub fn new(writer: &'a mut Box<ParquetWriter>) -> Self {
         WSEParser {
             path_to_data: "../WSE_Data/Sample_Warsaw_Kapka",
             writer: writer
