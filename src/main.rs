@@ -10,7 +10,7 @@ use chrono::NaiveDate;
 use parsers::parser::*;
 use writers::{base_writer::BaseWriter, *};
 
-use crate::parquet_writer::ParquetWriter;
+use crate::{common::{get_market_data_schema, get_normalised_path}, parquet_writer::ParquetWriter};
 
  fn main() {
     set_up_color_terminal();
@@ -30,7 +30,8 @@ use crate::parquet_writer::ParquetWriter;
 
     let parser = parsers::parser::Parser {};
     let mut writer: Box<ParquetWriter> = Box::new(ParquetWriter::new(
-        format!("normalised_data/{}.parquet", &source_str).to_string()
+        get_normalised_path(&date, &source),
+        get_market_data_schema()
     ));
 
     parser.parse_market_data(&date, source, &mut writer);

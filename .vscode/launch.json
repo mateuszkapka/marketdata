@@ -25,6 +25,23 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug executable 'symbology'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=symbology",
+                ],
+                "filter": {
+                    "name": "symbology",
+                    "kind": "bin"
+                }
+            },
+            "args": ["WSE"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug unit tests in executable 'marketdata'",
             "cargo": {
                 "args": [

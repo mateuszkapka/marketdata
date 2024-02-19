@@ -1,15 +1,11 @@
 extern crate parquet;
 
 use std::{
-    collections::HashSet,
-    fs::File,
-    path::Path,
-    sync::Arc,
+    collections::HashSet, fs::File, path::Path, sync::Arc
 };
 
 use arrow::{
-    array::*,
-    datatypes::{DataType, Field, Schema},
+    array::*, datatypes::Schema,
 };
 use log::info;
 use parquet::{
@@ -19,8 +15,7 @@ use parquet::{
 };
 
 use crate::{
-    data::{event::Event, event_header::EventHeader},
-    writers::base_writer::*,
+    common::get_market_data_schema, data::{event::Event, event_header::EventHeader}, writers::base_writer::*
 };
 
 pub struct ParquetWriter {
@@ -28,24 +23,7 @@ pub struct ParquetWriter {
 }
 
 impl ParquetWriter{
-    pub fn new(result_filename: String) -> Self{
-        let schema = Schema::new(vec![
-            Field::new(
-                "timestamp",
-                DataType::Timestamp(arrow::datatypes::TimeUnit::Millisecond, None),
-                false,
-            ),
-            Field::new("symbol", DataType::Utf8, true),
-            Field::new("bid_price", DataType::Float64, true),
-            Field::new("bid_size", DataType::Int64, true),
-            Field::new("ask_price", DataType::Float64, true),
-            Field::new("ask_size", DataType::Int64, true),
-            Field::new("market_period", DataType::Utf8, true),
-            Field::new("trade_price", DataType::Float64, true),
-            Field::new("trade_volume", DataType::Int64, true),
-            Field::new("type", DataType::Utf8, true),
-        ]);
-
+    pub fn new(result_filename: String, schema: Schema) -> Self{
         let props = WriterProperties::builder()
         .set_compression(Compression::ZSTD(
             <ZstdLevel as std::default::Default>::default(),
@@ -69,8 +47,6 @@ impl ParquetWriter{
 impl BaseWriter for ParquetWriter {
     fn write_matket_data(&mut self, dataset: &Vec<Event>) {
         info!("Starting to write data");
-        let mut index = 0;
-        index += 1;
         let mut timestamp_data: Vec<i64> = Vec::new();
         timestamp_data.reserve(dataset.len());
         let mut symbol_data: Vec<&str> = Vec::new();
@@ -151,34 +127,26 @@ impl BaseWriter for ParquetWriter {
         info!("Writing finished")
     }
 
-    fn write_symbology(&self, _symbols: &HashSet<String>) {
-        // let props = WriterProperties::builder()
-        //     .set_compression(Compression::ZSTD(
-        //         <ZstdLevel as std::default::Default>::default(),
-        //     ))
-        //     .build();
-
-        // let schema = Schema::new(vec![Field::new("symbol", DataType::Utf8, true)]);
-
-        // let mut writer = ArrowWriter::try_new(
-        //     File::create(&Path::new(&self.result_filename)).unwrap(),
-        //     Arc::new(schema),
-        //     Some(props),
-        // )
-        // .unwrap();
-
-        // let symbols = StringArray::from_iter_values(symbols);
-
-        // let batch =
-        //     RecordBatch::try_from_iter(vec![("symbol", Arc::new(symbols) as ArrayRef)]).unwrap();
-
-        // writer
-        //     .write(&batch)
-        //     .expect("Unable to write the next batch!");
-        // writer.close().unwrap();
-    }
 
     fn finalize(self) {
         self.writer.close().unwrap();
+    }
+
+    fn write_symbology(&mut self, symbology: HashSet<String>) {
+        info!("Starting to write data");
+
+        let symbols = StringArray::from(symbology.iter().map(|value| value.clone()).collect::<Vec<String>>());
+
+        let batch = RecordBatch::try_from_iter(vec![
+            ("symbol", Arc::new(symbols) as ArrayRef),
+        ])
+        .unwrap();
+        
+        info!("Data prepared, writing to disk");
+        self.writer
+            .write(&batch)
+            .expect("Unable to write the next batch!");
+
+        info!("Writing finished")
     }
 }

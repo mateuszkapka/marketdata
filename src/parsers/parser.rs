@@ -1,9 +1,5 @@
-
-
-
+use std::fmt;
 use std::str::FromStr;
-
-use crate::base_writer::BaseWriter;
 
 
 use crate::parquet_writer::ParquetWriter;
@@ -13,6 +9,7 @@ use chrono::NaiveDate;
 use super::databento_parser;
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub enum ParserType {
     WSE,
     NASDAQ
@@ -27,6 +24,12 @@ impl FromStr for ParserType {
             "NASDAQ"  => Ok(ParserType::NASDAQ),
             _      => Err(()),
         }
+    }
+}
+
+impl fmt::Display for ParserType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 

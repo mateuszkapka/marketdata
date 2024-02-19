@@ -1,5 +1,3 @@
-use std::cmp::max;
-use std::ptr::eq;
 
 use crate::data::quote::*;
 use crate::data::trade::*;
@@ -71,7 +69,7 @@ impl Eq for Event{
 }
 
 impl Ord for Event{
-    fn clamp(self, min: Self, max: Self) -> Self
+    fn clamp(self, _min: Self, _max: Self) -> Self
         where
             Self: Sized,
             Self: PartialOrd, {

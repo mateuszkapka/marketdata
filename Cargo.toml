@@ -9,7 +9,7 @@ path = "src/main.rs"
 
 [[bin]]
 name = "symbology"
-path = "src/symbology.rs"
+path = "src/main_symbology.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
