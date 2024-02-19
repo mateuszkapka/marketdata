@@ -110,8 +110,8 @@ impl<'a> NasdaqParser<'a>{
 
         let mut index = 0;
         let mut events_buffer: SortedLinkedList<Event, _, Min, 2> = SortedLinkedList::new_usize();
-        events_buffer.push(latest_quote);
-        events_buffer.push(latest_trade);
+        events_buffer.push(latest_quote).unwrap();
+        events_buffer.push(latest_trade).unwrap();
         while !events_buffer.is_empty() {   
             let min_event = events_buffer.pop().unwrap();
 

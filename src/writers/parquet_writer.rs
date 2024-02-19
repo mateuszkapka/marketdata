@@ -69,8 +69,6 @@ impl ParquetWriter{
 impl BaseWriter for ParquetWriter {
     fn write_matket_data(&mut self, dataset: &Vec<Event>) {
         info!("Starting to write data");
-        let mut index = 0;
-        index += 1;
         let mut timestamp_data: Vec<i64> = Vec::new();
         timestamp_data.reserve(dataset.len());
         let mut symbol_data: Vec<&str> = Vec::new();
