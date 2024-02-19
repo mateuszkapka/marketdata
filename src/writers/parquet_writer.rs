@@ -72,15 +72,26 @@ impl BaseWriter for ParquetWriter {
         let mut index = 0;
         index += 1;
         let mut timestamp_data: Vec<i64> = Vec::new();
+        timestamp_data.reserve(dataset.len());
         let mut symbol_data: Vec<&str> = Vec::new();
+        symbol_data.reserve(dataset.len());
         let mut bid_price_data: Vec<Option<f64>> = Vec::new();
+        bid_price_data.reserve(dataset.len());
         let mut bid_size_data: Vec<Option<i64>> = Vec::new();
+        bid_size_data.reserve(dataset.len());
         let mut ask_price_data: Vec<Option<f64>> = Vec::new();
+        ask_price_data.reserve(dataset.len());
         let mut ask_size_data: Vec<Option<i64>> = Vec::new();
+        ask_size_data.reserve(dataset.len());
         let mut market_period_data: Vec<Option<&str>> = Vec::new();
+        market_period_data.reserve(dataset.len());
         let mut trade_price_data: Vec<Option<f64>> = Vec::new();
+        trade_price_data.reserve(dataset.len());
         let mut trade_volume_data: Vec<Option<i64>> = Vec::new();
+        trade_volume_data.reserve(dataset.len());
         let mut type_data: Vec<&str> = Vec::new();
+        type_data.reserve(dataset.len());
+
         for event in dataset {
             timestamp_data.push(event.get_timestamp().timestamp_millis());
             symbol_data.push(event.get_symbol());
