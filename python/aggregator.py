@@ -27,11 +27,11 @@ class Aggregate():
         pass
 
 class Aggregator:
-    def __init__(self, market_data_path: str,symbology_path: str,
-                 region: RegionConfig = WSE(),
+    def __init__(self, region: RegionConfig, date: str,
                  filter: Filter = NoopFilter()):
-        self.market_data_path = market_data_path
+        self.market_data_path = region.get_marketdata_path(date)
         self.aggregates = {}
+        self.date = date
         self.aggregate_values = {}
         self.region = region
         self.slice_schedule = WallClockSliceSchedule(time(hour=9, minute=00),
@@ -39,7 +39,7 @@ class Aggregator:
                                                      timedelta(minutes=5),
                                                      self.on_slice_triggered)
         self.filter = filter
-        self.readSymbology(symbology_path)
+        self.readSymbology(region.get_symbology_path(self.date))
 
     def readSymbology(self, symbology_path):
         df = pd.read_parquet(symbology_path, engine='pyarrow')

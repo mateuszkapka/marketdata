@@ -66,4 +66,9 @@ class WSE(RegionConfig):
 
         return tick_table[-1].tick_size
 
+    def get_marketdata_path(self, date) -> str:
+        return "../normalised_data/WSE.parquet"
+
+    def get_symbology_path(self, date) -> str:
+        return "../symbology_data/WSE.parquet"
 
