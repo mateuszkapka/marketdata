@@ -14,6 +14,7 @@ pub fn get_symbology_path(_date: &NaiveDate, parser_type: &ParserType) -> String
     format!("symbology_data/{}.parquet", parser_type)
 }
 
+#[allow(dead_code)]
 pub fn get_symbology_schena() -> Schema{
     Schema::new(vec![
         Field::new("symbol", DataType::Utf8, true),

@@ -15,7 +15,7 @@ use parquet::{
 };
 
 use crate::{
-    common::get_market_data_schema, data::{event::Event, event_header::EventHeader}, writers::base_writer::*
+    data::{event::Event, event_header::EventHeader}, writers::base_writer::*
 };
 
 pub struct ParquetWriter {
