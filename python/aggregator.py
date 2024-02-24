@@ -51,7 +51,15 @@ class Aggregator:
             self.aggregates.setdefault(symbol, []).append(aggregate(self.region, symbol))
 
     def run(self):
-        df = pd.read_parquet(self.market_data_path, engine='pyarrow')
+        parquet_filters = self.filter.parquetFilter()
+        filters=None
+        if parquet_filters is not None:
+            filters = [parquet_filters]
+
+        df = pd.read_parquet(self.market_data_path,
+                             engine='pyarrow',
+                             filters=filters)
+
 
         for row in df.itertuples():
             if self.filter.shouldFilter(row):

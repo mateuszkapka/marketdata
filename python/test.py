@@ -4,30 +4,7 @@ from datetime import time
 import aggregator
 import filters
 from regionConfig.WSE import WSE
-
-
-
-class SpreadByTickSizeAggregate(aggregator.Aggregate):
-    def __init__(self, region, symbol):
-        self.last_bid = 0.0
-        self.last_ask = 0.0
-        self.region = region
-        self.tick_series = []
-
-    def on_quote(self, quote):
-        self.spread = quote.ask_price - quote.bid_price
-
-    def on_trade(self, trade):
-        tick_size = self.region.get_tick_size(trade.trade_price, trade.symbol)
-        if tick_size != 0:
-            self.tick_series.append(self.spread / tick_size)
-
-    def compute_slice(self, slice):
-        if len(self.tick_series) == 0:
-            return 0
-
-        value = sum(self.tick_series) / len(self.tick_series)
-        return value
+from regionConfig.NASDAQ import NASDAQ
 
 class testAggregate(aggregator.Aggregate):
     def __init__(self):
@@ -47,10 +24,35 @@ class testAggregate(aggregator.Aggregate):
         return ret
 
 
-agg = aggregator.Aggregator("../WSE_marketdata.parquet",
-                            "../WSE_symbology.parquet",
-                            WSE(),
-                            filters.SymbolFilter("DTR"))
+class SpreadByTickSizeAggregate(aggregator.Aggregate):
+    def __init__(self, region, symbol):
+        self.last_bid = 0.0
+        self.last_ask = 0.0
+        self.region = region
+        self.tick_series = []
+
+    def on_quote(self, quote):
+        self.spread = quote.ask_price - quote.bid_price
+
+    def on_trade(self, trade):
+        tick_size = self.region.get_tick_size(trade.trade_price, trade.symbol)
+        if tick_size != 0 and self.spread > 0:
+            self.tick_series.append(self.spread / tick_size)
+
+    def compute_slice(self, slice):
+        if len(self.tick_series) == 0:
+            return 0
+
+        value = sum(self.tick_series) / len(self.tick_series)
+        return value
+
+
+
+# agg = aggregator.Aggregator( WSE(),"20240122")
+# agg.registerAggregate(SpreadByTickSizeAggregate)
+# aggs_wse = agg.run()
+
+agg = aggregator.Aggregator(NASDAQ(),"20240122",filters.SymbolFilter('AAPL') )
 agg.registerAggregate(SpreadByTickSizeAggregate)
-result = agg.run()
-x = 1
+aggs_nasdaq = agg.run()
+aggs_nasdaq
