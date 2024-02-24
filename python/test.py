@@ -30,6 +30,7 @@ class SpreadByTickSizeAggregate(aggregator.Aggregate):
         self.last_ask = 0.0
         self.region = region
         self.tick_series = []
+        self.spread = 0
 
     def on_quote(self, quote):
         self.spread = quote.ask_price - quote.bid_price
@@ -52,7 +53,7 @@ class SpreadByTickSizeAggregate(aggregator.Aggregate):
 # agg.registerAggregate(SpreadByTickSizeAggregate)
 # aggs_wse = agg.run()
 
-agg = aggregator.Aggregator(NASDAQ(),"20240122",filters.SymbolFilter('AAPL') )
+agg = aggregator.Aggregator(NASDAQ(),"20240122")
 agg.registerAggregate(SpreadByTickSizeAggregate)
 aggs_nasdaq = agg.run()
 aggs_nasdaq

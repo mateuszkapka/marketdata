@@ -78,8 +78,10 @@ class Aggregator:
                     row.market_period,
                     row.type
                 )
-                for aggregate in self.aggregates[row.symbol]:
-                    aggregate.on_quote(quote)
+                agg_node = self.aggregates.get(row.symbol)
+                if agg_node is not None:
+                    for aggregate in agg_node:
+                        aggregate.on_quote(quote)
             elif row.type == "Trade":
                 trade = Trade(
                     row.timestamp,
@@ -88,8 +90,10 @@ class Aggregator:
                     row.trade_volume,
                     row.type,
                 )
-                for aggregate in self.aggregates[row.symbol]:
-                    aggregate.on_trade(trade)
+                agg_node = self.aggregates.get(row.symbol)
+                if agg_node is not None:
+                    for aggregate in agg_node:
+                        aggregate.on_trade(trade)
             else:
                 raise Exception(f"Unrecognized type {row.type}")
 

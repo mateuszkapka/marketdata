@@ -40,7 +40,7 @@ impl<'a> NasdaqParser<'a>{
     pub fn new(writer: &'a mut Box<ParquetWriter>) -> Self{
         NasdaqParser{
             path_to_quotes: "sample_nasdaq_databento/mbp/xnas-itch-20240122.mbp-1.dbn.zst",
-            path_to_trades: "sample_nasdaq_databento/tbbo/xnas-itch-20240122.tbbo.dbn.zst",
+            path_to_trades: "sample_nasdaq_databento/trades/xnas-itch-20240122.trades.dbn.zst",
             path_to_symbology: "sample_nasdaq_databento/tbbo/symbology (1).json",
             writer: writer
         }
