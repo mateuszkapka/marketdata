@@ -60,10 +60,13 @@ class Aggregator:
                              engine='pyarrow',
                              filters=filters)
 
-
+        index = 1
         for row in df.itertuples():
             if self.filter.shouldFilter(row):
                 continue
+
+            if index % 1_000_000 == 0:
+                print("processed {}/{} rows".format(index, df.size))
 
             self.slice_schedule.trigger_maybe(row.timestamp)
 
@@ -96,6 +99,7 @@ class Aggregator:
                         aggregate.on_trade(trade)
             else:
                 raise Exception(f"Unrecognized type {row.type}")
+            index += 1
 
         return self.aggs_to_dataframe()
 

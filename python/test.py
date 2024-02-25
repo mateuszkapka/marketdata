@@ -6,24 +6,6 @@ import filters
 from regionConfig.WSE import WSE
 from regionConfig.NASDAQ import NASDAQ
 
-class testAggregate(aggregator.Aggregate):
-    def __init__(self):
-        self.index = 0
-        self.trade_index = 0
-        self.volume = 0
-
-    def on_quote(self, quote):
-        pass
-
-    def on_trade(self, trade):
-        self.volume += trade.trade_volume
-
-    def compute_slice(self, slice: time):
-        ret = self.volume
-        self.volume = 0
-        return ret
-
-
 class SpreadByTickSizeAggregate(aggregator.Aggregate):
     def __init__(self, region, symbol):
         self.last_bid = 0.0
@@ -56,4 +38,5 @@ class SpreadByTickSizeAggregate(aggregator.Aggregate):
 agg = aggregator.Aggregator(NASDAQ(),"20240122")
 agg.registerAggregate(SpreadByTickSizeAggregate)
 aggs_nasdaq = agg.run()
-aggs_nasdaq
+
+aggs_nasdaq.to_parquet("aggs_nasdaq")
