@@ -66,7 +66,7 @@ impl<'a> NasdaqParser<'a>{
             Some(r) =>
                 match r.as_enum().unwrap(){
                     RecordRefEnum::Mbp1(mbp) => {
-                        let timestamp = NaiveDateTime::from_timestamp_micros(mbp.hd.ts_event as i64).unwrap();
+                        let timestamp = NaiveDateTime::from_timestamp_nanos(mbp.hd.ts_event as i64).unwrap();
                         Some(Event::Quote(Quote{
                             symbol: symbology.get(&mbp.hd.instrument_id).unwrap().to_string(),
                             quote_date: timestamp,
@@ -79,7 +79,7 @@ impl<'a> NasdaqParser<'a>{
                         }))
                     },
                     RecordRefEnum::Trade(msg) => {
-                        let timestamp = NaiveDateTime::from_timestamp_micros(msg.hd.ts_event as i64).unwrap();
+                        let timestamp = NaiveDateTime::from_timestamp_nanos(msg.hd.ts_event as i64).unwrap();
                         Some(Event::Trade(Trade{
                             symbol: symbology.get(&msg.hd.instrument_id).unwrap().to_string(),
                             exchange_date:  timestamp.to_string(),
@@ -102,8 +102,8 @@ impl<'a> NasdaqParser<'a>{
 
         let symbology: HashMap<u32, String> = self.load_symbology(date);
 
-        let mut trades_decoder = DbnDecoder::from_zstd_file(self.path_to_quotes).unwrap();
-        let mut quotes_decorer = DbnDecoder::from_zstd_file(self.path_to_trades).unwrap();
+        let mut trades_decoder = DbnDecoder::from_zstd_file(self.path_to_trades).unwrap();
+        let mut quotes_decorer = DbnDecoder::from_zstd_file(self.path_to_quotes).unwrap();
 
         let latest_trade = self.process_one(&trades_decoder.decode_record_ref().unwrap(), &symbology).unwrap();
         let latest_quote = self.process_one(&quotes_decorer.decode_record_ref().unwrap(), &symbology).unwrap();
@@ -113,7 +113,7 @@ impl<'a> NasdaqParser<'a>{
         events_buffer.push(latest_quote).unwrap();
         events_buffer.push(latest_trade).unwrap();
         while !events_buffer.is_empty() {   
-            let min_event = events_buffer.pop().unwrap();
+            let min_event: Event = events_buffer.pop().unwrap();
 
             match min_event {
                 Event::Quote(_) =>{
@@ -132,7 +132,7 @@ impl<'a> NasdaqParser<'a>{
                 }
             }
             result.push(min_event);
-            if index % BATCH_SIZE == 0 {
+            if index != 0 && index % BATCH_SIZE == 0 {
                 self.writer.write_matket_data(&result);
                 result.clear();
                 info!("Flushed after {} messages...", index);
