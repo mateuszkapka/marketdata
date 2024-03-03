@@ -23,6 +23,7 @@ pub struct ParquetWriter {
 }
 
 impl ParquetWriter{
+    #[allow(dead_code)]
     pub fn new(result_filename: String, schema: Schema) -> Self{
         let props = WriterProperties::builder()
         .set_compression(Compression::ZSTD(

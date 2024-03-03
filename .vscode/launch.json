@@ -57,6 +57,23 @@
             },
             "args": [],
             "cwd": "${workspaceFolder}"
+        } ,
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug 'aggregates'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=aggregates",
+                ],
+                "filter": {
+                    "name": "aggregates",
+                    "kind": "bin"
+                }
+            },
+            "args": ["WSE"],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

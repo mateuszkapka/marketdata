@@ -2,10 +2,14 @@
 
 use std::fs::File;
 
-use crate::{common::{get_market_data_schema, map_columns_to_indexes}, data::event::Event};
+use crate::{common::{get_market_data_schema, get_symbology_schena, map_columns_to_indexes}, data::event::Event};
 
 use chrono::NaiveDateTime;
 use parquet::{file::{reader::FileReader, serialized_reader::SerializedFileReader}, record::RowAccessor};
+
+pub struct ParquetReader{
+
+}
 
 pub struct ParquetStreamReader<F>
 where
@@ -22,7 +26,6 @@ where
     pub fn read_market_data(&mut self, filename: &str) {
         let schema = get_market_data_schema();
         let colums_mapping = map_columns_to_indexes(&schema);
-        let _file = File::open(filename).unwrap();
 
         // Open the Parquet file
         let file = File::open(filename).unwrap();
@@ -56,5 +59,27 @@ where
                  _ => panic!("Unable to parse event type {}", &event_type)
                  }
         }
+    }
+
+    
+}
+
+impl ParquetReader{
+    pub fn read_symbology(&self, filename: &str) -> Vec<String>{
+        let mut result = Vec::new();
+        let schema = get_symbology_schena();
+        let colums_mapping = map_columns_to_indexes(&schema);
+
+        let file = File::open(filename).unwrap();
+        let reader = SerializedFileReader::new(file).unwrap();
+        let mut arrow_reader = reader.get_row_iter(None).unwrap();
+
+        while let Some(record_result) = arrow_reader.next() {
+            let record = record_result.unwrap();
+            let column_index = colums_mapping.get("symbol").unwrap().clone();
+            result.push(record.get_string(column_index).unwrap().to_string())
+        }
+
+        result
     }
 }

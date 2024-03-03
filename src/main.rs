@@ -1,6 +1,9 @@
+#[allow(dead_code)]
 mod data;
 mod parsers;
 mod writers;
+mod readers;
+mod aggregates;
 use log::info;
 use simple_logger::{SimpleLogger, set_up_color_terminal};
 
