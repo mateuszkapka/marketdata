@@ -1,25 +1,81 @@
 use crate::data::{quote::Quote, trade::Trade};
 
-use super::aggregate_base::Aggregate;
+use super::aggregate_base::{Aggregate, AggregateNew};
+
 
 
 
 pub struct SimpleAggregate{
-
+    symbol: String
 }
 
 impl Aggregate for SimpleAggregate{
-     fn on_quote(&self, quote: &Quote) {
-         println!("quote for {}|{}", quote.quote_date, quote.symbol);
+     fn on_quote(&mut self, quote: &Quote) {
+        // println!("quote for {}|{}", quote.quote_date, quote.symbol);
      }
      
-     fn on_trade(&self, trade: &Trade) {
-         println!("trade for {}|{}", trade.trade_timestamp, trade.symbol);
+     fn on_trade(&mut self, trade: &Trade) {
+        // println!("trade for {}|{}", trade.trade_timestamp, trade.symbol);
+     }
+
+     fn compute_slice(&self, slice: &chrono::prelude::NaiveDateTime) -> f64 {
+        println!("Computing aggregate for {}", slice);
+
+        0.0
+     }
+
+     fn get_name(&self) -> &str {
+         "SimpleAggregate"
+     }
+
+     fn get_symbol(&self) -> &str {
+         &self.symbol
      }
 }
 
-impl Default for SimpleAggregate{
-    fn default() -> Self {
-        SimpleAggregate{}
+impl AggregateNew for SimpleAggregate{
+    fn new(symbol: &str) -> Self {
+        SimpleAggregate{
+            symbol: symbol.to_string()
+        }
+    }
+}
+
+
+pub struct VolumeAggregate{
+    symbol: String,
+    total_volume: f64
+}
+
+impl Aggregate for VolumeAggregate{
+     fn on_quote(&mut self, quote: &Quote) {
+        
+     }
+     
+     fn on_trade(&mut self, trade: &Trade) {
+        self.total_volume += trade.volume as f64;
+     }
+
+     fn compute_slice(&self, slice: &chrono::prelude::NaiveDateTime) -> f64 {
+        println!("Computing aggregate for {}", slice);
+
+        self.total_volume
+     }
+
+     fn get_name(&self) -> &str {
+         "VolumeAggregate"
+     }
+
+     fn get_symbol(&self) -> &str {
+         &self.symbol
+     }
+}
+
+impl AggregateNew for VolumeAggregate{
+    fn new(symbol: &str) -> Self {
+        VolumeAggregate{
+            symbol: symbol.to_string(),
+            total_volume: 0.0
+        }
     }
 }

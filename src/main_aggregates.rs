@@ -4,9 +4,8 @@ mod parsers;
 mod readers;
 mod aggregates;
 
-use aggregates::aggregate_framework::AggregateFramework;
+use aggregates::{aggregate_framework::AggregateFramework, test_aggregates::VolumeAggregate};
 use parsers::parser::ParserType;
-use aggregates::test_aggregates::SimpleAggregate;
 use std::process::exit;
 use chrono::NaiveDate;
 use writers::*;
@@ -33,8 +32,8 @@ fn main() {
     };
     let source = ParserType::from_str(&source_str).expect("Invalid value for argument source!");
     let mut framework = AggregateFramework::new(&source, &date);
-    framework.register_aggregate::<SimpleAggregate>();
-    framework.run();
+    framework.register_aggregate::<VolumeAggregate>();
+    let _result = framework.run();
 
     exit(0);
 }
