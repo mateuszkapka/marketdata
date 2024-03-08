@@ -7,20 +7,23 @@ use crate::{common::{get_market_data_schema, get_symbology_schena, map_columns_t
 use chrono::NaiveDateTime;
 use parquet::{file::{reader::FileReader, serialized_reader::SerializedFileReader}, record::RowAccessor};
 
-pub struct ParquetReader{
+use super::filters::ParquetFilter;
 
-}
-
-pub struct ParquetStreamReader<F>
+pub struct ParquetReader
+{}
+pub struct ParquetStreamReader<TFilter, F>
 where
     F: FnMut(Event),
+    TFilter: ParquetFilter
 {
-    pub on_event: F
+    pub on_event: F,
+    pub filter: TFilter
 }
 
-impl<F> ParquetStreamReader<F>
+impl<TFilter, F> ParquetStreamReader<TFilter, F>
 where
     F: FnMut(Event),
+    TFilter: ParquetFilter
 {
 
     pub fn read_market_data(&mut self, filename: &str) {
@@ -35,7 +38,11 @@ where
         // Iterate over rows and extract the "symbol" column
         while let Some(record_result) = arrow_reader.next() {
             let record = record_result.unwrap();
-            let event_type= record.get_string(colums_mapping.get("type").unwrap().clone()).unwrap().clone();
+            let event_type= record.get_string(colums_mapping.get("type").unwrap().clone()).unwrap().clone(); 
+            if self.filter.should_filter_row(&record, &colums_mapping){
+                continue;
+            }
+
             match event_type.as_str(){
                  "Trade" => {
                     (self.on_event)(Event::Trade(crate::data::trade::Trade {

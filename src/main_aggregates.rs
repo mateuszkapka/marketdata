@@ -6,6 +6,7 @@ mod aggregates;
 
 use aggregates::{aggregate_framework::AggregateFramework, test_aggregates::VolumeAggregate};
 use parsers::parser::ParserType;
+use readers::filters::{NoOpFilter, ParquetFilter, SymbolFilter};
 use std::process::exit;
 use chrono::NaiveDate;
 use writers::*;
@@ -21,6 +22,9 @@ fn main() {
         clap::Arg::new("source")
             .value_parser(clap::builder::PossibleValuesParser::new(["WSE", "NASDAQ"]))
             .required(true)
+    ).arg(
+        clap::Arg::new("symbol")
+            .required(false)
     );
     
     let matches = cmd.get_matches();
@@ -30,10 +34,27 @@ fn main() {
             exit(0);
         }
     };
+
     let source = ParserType::from_str(&source_str).expect("Invalid value for argument source!");
-    let mut framework = AggregateFramework::new(&source, &date);
-    framework.register_aggregate::<VolumeAggregate>();
-    let _result = framework.run();
+    let filter = matches.get_one::<String>("symbol");
+
+    if filter.is_none(){
+        let mut framework = AggregateFramework::new(&source, &date, NoOpFilter{});
+        run_agg_framework(framework);
+    } else{
+        let mut framework = AggregateFramework::new(&source, &date, SymbolFilter::new(filter.unwrap()));
+        run_agg_framework(framework);
+    }
+    
 
     exit(0);
+}
+
+fn run_agg_framework<T: ParquetFilter + Clone>(mut framework: AggregateFramework<T>){
+    framework.register_aggregate::<VolumeAggregate>();
+    let result = framework.run();
+
+    for row in result{
+        print!("{:?}", row);
+    }
 }
