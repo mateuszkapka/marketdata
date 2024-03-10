@@ -2,14 +2,15 @@ use core::fmt;
 use std::str::FromStr;
 
 
-use crate::parquet_writer::ParquetWriter;
+use crate::writers::parquet_writer::ParquetWriter;
 use crate::parsers::wse_parser::{self};
 use chrono::NaiveDate;
+use clap::ValueEnum;
 
 use super::databento_parser;
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, ValueEnum, Clone)]
 pub enum ParserType {
     WSE,
     NASDAQ

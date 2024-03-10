@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use chrono::{NaiveDate, NaiveDateTime};
 
 use super::aggregate_base::{Aggregate, AggregateNew};
-use crate::common::{get_normalised_path, get_symbology_path};
+use crate::paths::scratch::{get_normalised_path, get_symbology_path};
 use crate::data::event::Event;
 use crate::data::event_header::EventHeader;
 use crate::parsers::parser::ParserType;

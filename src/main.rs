@@ -4,6 +4,8 @@ mod parsers;
 mod writers;
 mod readers;
 mod aggregates;
+mod paths;
+mod utils;
 use log::info;
 use simple_logger::{SimpleLogger, set_up_color_terminal};
 
@@ -13,7 +15,7 @@ use chrono::NaiveDate;
 use parsers::parser::*;
 use writers::{base_writer::BaseWriter, *};
 
-use crate::{common::{get_market_data_schema, get_normalised_path}, parquet_writer::ParquetWriter};
+use crate::{paths::scratch::get_normalised_path, parquet_writer::ParquetWriter, schemas::get_market_data_schema};
 
  fn main() {
     set_up_color_terminal();

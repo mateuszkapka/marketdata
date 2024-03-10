@@ -72,7 +72,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["WSE"],
+            "args": ["NASDAQ", "AAPL"],
             "cwd": "${workspaceFolder}"
         }
     ]

@@ -2,6 +2,7 @@ mod data;
 mod parsers;
 mod writers;
 mod symbology;
+mod paths;
 mod readers;
 
 use chrono::NaiveDate;
@@ -11,7 +12,7 @@ use writers::*;
 
 use std::{process::exit, str::FromStr};
 
-use crate::{base_writer::BaseWriter, common::{get_normalised_path, get_symbology_path, get_symbology_schena}, parquet_writer::ParquetWriter, symbology::symbology_service::generate_symbology};
+use crate::{base_writer::BaseWriter, paths::scratch::{get_normalised_path, get_symbology_path}, parquet_writer::ParquetWriter, schemas::get_symbology_schena, symbology::symbology_service::generate_symbology};
 
 fn main() {
     

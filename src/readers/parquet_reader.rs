@@ -2,7 +2,7 @@
 
 use std::fs::File;
 
-use crate::{common::{get_market_data_schema, get_symbology_schena, map_columns_to_indexes}, data::event::Event};
+use crate::{writers::schemas::{get_market_data_schema, get_symbology_schena, map_columns_to_indexes}, data::event::Event};
 
 use chrono::NaiveDateTime;
 use parquet::{file::{reader::FileReader, serialized_reader::SerializedFileReader}, record::RowAccessor};

@@ -3,13 +3,14 @@ use core::panic;
 use std::io::{BufRead, BufReader};
 
 
-use crate::base_writer::BaseWriter;
+use crate::writers::base_writer::BaseWriter;
+use crate::paths::scratch;
 use crate::data::event_header::*;
 use crate::data::quote::*;
 
 use crate::data::trade::*;
 use crate::data::event::*;
-use crate::parquet_writer::ParquetWriter;
+use crate::writers::parquet_writer::ParquetWriter;
 use chrono::{Datelike, NaiveDate, NaiveDateTime, NaiveTime};
 use std::fs::{self, DirEntry, File};
 use std::path::Path;
@@ -22,7 +23,7 @@ pub struct WSEParser<'a> {
 impl<'a> WSEParser<'a> {
     pub fn new(writer: &'a mut Box<ParquetWriter>) -> Self {
         WSEParser {
-            path_to_data: "../WSE_Data/Sample_Warsaw_Kapka",
+            path_to_data: scratch::WSE_TICK_FILES_PATH,
             writer: writer
         }
     }

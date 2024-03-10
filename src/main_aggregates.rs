@@ -3,12 +3,12 @@ mod writers;
 mod parsers;
 mod readers;
 mod aggregates;
+mod paths;
 
 use aggregates::{aggregate_framework::AggregateFramework, test_aggregates::VolumeAggregate};
 use parsers::parser::ParserType;
 use std::process::exit;
 use chrono::NaiveDate;
-use writers::*;
 
 use std::str::FromStr;
 
@@ -31,9 +31,16 @@ fn main() {
         }
     };
     let source = ParserType::from_str(&source_str).expect("Invalid value for argument source!");
-    let mut framework = AggregateFramework::new(&source, &date);
-    framework.register_aggregate::<VolumeAggregate>();
-    let _result = framework.run();
+    let filter = matches.get_one::<String>("symbol");
+
+    if filter.is_none(){
+        let framework = AggregateFramework::new(&source, &date, NoOpFilter{});
+        run_agg_framework(framework);
+    } else{
+        let framework = AggregateFramework::new(&source, &date, SymbolFilter::new(filter.unwrap()));
+        run_agg_framework(framework);
+    }
+    
 
     exit(0);
 }

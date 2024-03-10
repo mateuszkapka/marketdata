@@ -6,11 +6,12 @@ use std::fs;
 use chrono::{NaiveDate, NaiveDateTime};
 use databento::dbn::decode::{DbnDecoder, DecodeRecordRef};
 use databento::dbn::{RecordRef, RecordRefEnum};
-use crate::base_writer::BaseWriter;
+use crate::writers::base_writer::BaseWriter;
+use crate::paths::scratch;
 use crate::data::event::*;
 use crate::data::quote::Quote;
 use crate::data::trade::Trade;
-use crate::parquet_writer::ParquetWriter;
+use crate::writers::parquet_writer::ParquetWriter;
 use serde::Deserialize;
 use log::info;
 use heapless::sorted_linked_list::{SortedLinkedList, Min};
@@ -39,9 +40,9 @@ pub struct NasdaqSymbology{
 impl<'a> NasdaqParser<'a>{
     pub fn new(writer: &'a mut Box<ParquetWriter>) -> Self{
         NasdaqParser{
-            path_to_quotes: "sample_nasdaq_databento/mbp/xnas-itch-20240122.mbp-1.dbn.zst",
-            path_to_trades: "sample_nasdaq_databento/trades/xnas-itch-20240122.trades.dbn.zst",
-            path_to_symbology: "sample_nasdaq_databento/tbbo/symbology (1).json",
+            path_to_quotes: scratch::NASDAQ_PATH_TO_QUOTES,
+            path_to_trades: scratch::NASDAQ_PATH_TO_TRADES,
+            path_to_symbology: scratch::NASDAQ_PATH_TO_SYMBOLOGY,
             writer: writer
         }
     }
