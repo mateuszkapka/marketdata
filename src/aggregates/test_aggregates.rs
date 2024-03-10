@@ -10,11 +10,11 @@ pub struct SimpleAggregate{
 }
 
 impl Aggregate for SimpleAggregate{
-     fn on_quote(&mut self, quote: &Quote) {
+     fn on_quote(&mut self, _quote: &Quote) {
         // println!("quote for {}|{}", quote.quote_date, quote.symbol);
      }
      
-     fn on_trade(&mut self, trade: &Trade) {
+     fn on_trade(&mut self, _trade: &Trade) {
         // println!("trade for {}|{}", trade.trade_timestamp, trade.symbol);
      }
 
@@ -48,7 +48,7 @@ pub struct VolumeAggregate{
 }
 
 impl Aggregate for VolumeAggregate{
-     fn on_quote(&mut self, quote: &Quote) {
+     fn on_quote(&mut self, _quote: &Quote) {
         
      }
      

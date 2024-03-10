@@ -7,10 +7,12 @@ use crate::paths::scratch::{get_normalised_path, get_symbology_path};
 use crate::data::event::Event;
 use crate::data::event_header::EventHeader;
 use crate::parsers::parser::ParserType;
+use crate::readers::filters::ParquetFilter;
 use crate::readers::parquet_reader::{ParquetReader, ParquetStreamReader};
 use crate::aggregates::schedule::SliceSchedule;
 use crate::aggregates::schedule::WallClockSliceSchedule;
 
+#[derive(Debug)]
 pub struct AggregateValue{
     symbol: String,
     slice: NaiveDateTime,
@@ -18,17 +20,20 @@ pub struct AggregateValue{
     value: f64
 }
 
-pub struct AggregateFramework<'a>{
+pub struct AggregateFramework<'a, TFilter>
+where TFilter: ParquetFilter + Clone {
     aggregates: HashMap<String, Vec<Box<dyn Aggregate + 'a>>>,
     symbology: Vec<String>,
     date: NaiveDate,
     parser_type: &'a ParserType,
     slice_schedule: Box<dyn SliceSchedule>,
-    aggregate_values: Vec<AggregateValue>
+    aggregate_values: Vec<AggregateValue>,
+    filter: TFilter
 }
 
-impl<'a> AggregateFramework<'a>{
-    pub fn new(parser_type: &'a ParserType, date: &NaiveDate) -> Self{
+impl<'a, TFilter> AggregateFramework<'a, TFilter>
+where TFilter: ParquetFilter + Clone {
+    pub fn new(parser_type: &'a ParserType, date: &NaiveDate, filter: TFilter) -> Self{
         
         AggregateFramework{
             aggregates: HashMap::new(),
@@ -36,7 +41,8 @@ impl<'a> AggregateFramework<'a>{
             date: date.clone(),
             parser_type,
             slice_schedule: Box::new(WallClockSliceSchedule::new(date)),
-            aggregate_values: Vec::new()
+            aggregate_values: Vec::new(),
+            filter
         }
     }
 
@@ -65,6 +71,7 @@ impl<'a> AggregateFramework<'a>{
     pub fn run(&mut self)  -> &Vec<AggregateValue>{
 
         let mut reader = ParquetStreamReader{
+            filter: self.filter.clone(),
             on_event: |event: Event| {
                 match &event {
                     Event::Quote(quote) => {
