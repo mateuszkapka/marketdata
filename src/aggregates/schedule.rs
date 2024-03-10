@@ -22,7 +22,7 @@ impl WallClockSliceSchedule{
         
         result.push(time.clone());
         loop{
-            time += Duration::minutes(5);
+            time += Duration::try_minutes(5).unwrap();
             if time > end_time{
                 break;
             }

@@ -14,10 +14,10 @@ use crate::aggregates::schedule::WallClockSliceSchedule;
 
 #[derive(Debug)]
 pub struct AggregateValue{
-    symbol: String,
-    slice: NaiveDateTime,
-    aggregate_name: String,
-    value: f64
+    pub symbol: String,
+    pub slice: NaiveDateTime,
+    pub aggregate_name: String,
+    pub value: f64
 }
 
 pub struct AggregateFramework<'a, TFilter>
