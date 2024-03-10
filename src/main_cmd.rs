@@ -1,8 +1,5 @@
-use std::{process::exit};
-
 use clap::ValueEnum;
-use cmd::{promote::PromoteTarget, pull::pull};
-use parsers::parser::ParserType;
+use cmd::{promote::{promote, PromoteTarget}, pull::pull};
 
 #[allow(dead_code)]
 mod data;
@@ -28,28 +25,17 @@ fn main(){
             .required(true)
     )
     .arg(
-        clap::Arg::new("source")
-            .long("market")
-            .value_parser(clap::builder::EnumValueParser::<ParserType>::new())
+        clap::Arg::new("target")
+            .long("target")
             .required(false)
+            .value_parser(clap::builder::EnumValueParser::<PromoteTarget>::new())
+            .default_value("aggs")
     );
-    // .arg(
-    //     clap::Arg::new("target")
-    //         .long("target")
-    //         .required(false)
-    //        .default_value(PromoteTarget::Aggs)
-     
 
     let matches = cmd.get_matches();
     match matches.get_one::<CmdMode>("cmd").unwrap() {
         CmdMode::Pull => pull(),
-        CmdMode::Promote => {
-            
-        },
-         v => {
-            println!("command {:?} is not supported", v);
-            exit(1);
-        },
+        CmdMode::Promote => promote(matches.get_one::<PromoteTarget>("target").unwrap())
     }
     
 }

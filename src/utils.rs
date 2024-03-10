@@ -1,6 +1,6 @@
-use core::panic;
-use std::{fs::{self, metadata}, io::Error};
+use std::{fs, io::Error, process::Command};
 
+#[allow(dead_code)]
 pub fn ensure_folder(path: &str) -> Result<(), Error>{
     match fs::metadata(path){
         Ok(metadata) => {
@@ -14,4 +14,15 @@ pub fn ensure_folder(path: &str) -> Result<(), Error>{
 
     println!("Creating folder {}", path);
     fs::create_dir_all(path).map_err(|e| Error::new(std::io::ErrorKind::Other, format!("Unable to create {}: {}", path, e)))
+}
+
+#[allow(dead_code)]
+pub fn rsync(from: &str, to: &str){
+    println!("syncing data from {} to {}", from, to);
+    Command::new("rsync")
+        .args(["-arc", 
+        from,
+        to])
+        .output()
+        .expect("Unable to run rsync");
 }
