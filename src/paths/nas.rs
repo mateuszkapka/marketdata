@@ -7,7 +7,7 @@ pub const NAS_ENV_FOLDER: &str = "/volume1/data/";
 #[allow(dead_code)]
 pub const NAS_NORMALISED_OUTPUT_PATH: &str = "/volume1/data/normalised_data/";
 #[allow(dead_code)]
-pub const NAS_SYMBOLOGY_OUTPUT_PATH: &str = "/volume1/data/normalised_data/";
+pub const NAS_SYMBOLOGY_OUTPUT_PATH: &str = "/volume1/data/symbology_data/";
 
 #[allow(dead_code)]
 pub const NAS_WSE_TICK_FILES_PATH: &str = "/volume1/data/data/ticks/WSE";
