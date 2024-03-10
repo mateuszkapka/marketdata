@@ -27,3 +27,4 @@ symbology_data
 sample_nasdaq_databento/trades
 test.py.prof
 python/aggs_nasdaq
+*so

@@ -1,0 +1,62 @@
+use std::str::FromStr;
+
+use aggregates::{aggregate_framework::AggregateFramework, test_aggregates::VolumeAggregate};
+use chrono::NaiveDate;
+use parsers::parser::ParserType;
+use pyo3::prelude::*;
+use readers::filters::NoOpFilter;
+mod data;
+mod parsers;
+mod writers;
+mod readers;
+mod aggregates;
+mod paths;
+mod utils;
+
+use pyo3_polars::PyDataFrame;
+use polars::prelude::*;
+use polars::df;
+
+/// Formats the sum of two numbers as string.
+#[pyfunction]
+fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
+    Ok((a * b).to_string())
+}
+
+#[pyfunction]
+fn compute_aggregates(market: &str) -> PyResult<PyDataFrame> {
+    let source = ParserType::from_str(&market).expect("Invalid value for argument source!");
+    let date = NaiveDate::from_ymd_opt(2024, 01, 22).unwrap();
+    let mut framework = AggregateFramework::new(&source, &date, NoOpFilter{});
+    framework.register_aggregate::<VolumeAggregate>();
+    let result = framework.run();
+
+    let mut symbols = Vec::new();
+    let mut slices = Vec::new();
+    let mut aggregate_names = Vec::new();
+    let mut values = Vec::new();
+
+    for row in result{
+        symbols.push(row.symbol.clone());
+        slices.push(row.slice);
+        aggregate_names.push(row.aggregate_name.clone());
+        values.push(row.value);
+    }
+
+    let df = df!("symbol" => &symbols,
+             "slice" => &slices,
+             "aggregate_name" => &aggregate_names,
+             "value" => &values,
+            ).unwrap();
+
+    Ok(pyo3_polars::PyDataFrame(df))
+
+}
+
+/// A Python module implemented in Rust.
+#[pymodule]
+fn python(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(sum_as_string, m)?)?;
+    m.add_function(wrap_pyfunction!(compute_aggregates, m)?)?;
+    Ok(())
+}

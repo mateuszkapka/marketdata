@@ -18,8 +18,8 @@ impl Aggregate for SimpleAggregate{
         // println!("trade for {}|{}", trade.trade_timestamp, trade.symbol);
      }
 
-     fn compute_slice(&self, slice: &chrono::prelude::NaiveDateTime) -> f64 {
-        println!("Computing aggregate for {}", slice);
+     fn compute_slice(&self, _slice: &chrono::prelude::NaiveDateTime) -> f64 {
+        //println!("Computing aggregate for {}", slice);
 
         0.0
      }
@@ -56,8 +56,7 @@ impl Aggregate for VolumeAggregate{
         self.total_volume += trade.volume as f64;
      }
 
-     fn compute_slice(&self, slice: &chrono::prelude::NaiveDateTime) -> f64 {
-        println!("Computing aggregate for {}", slice);
+     fn compute_slice(&self, _slice: &chrono::prelude::NaiveDateTime) -> f64 {
 
         self.total_volume
      }

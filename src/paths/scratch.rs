@@ -16,7 +16,7 @@ pub const NASDAQ_PATH_TO_SYMBOLOGY: &str = "/scratch/data/ticks/NASDAQ/symbology
 
 
 pub const NORMALISED_OUTPUT_PATH: &str = "/scratch/normalised_data/";
-pub const SYMBOLOGY_OUTPUT_PATH: &str = "/scratch/normalised_data/";
+pub const SYMBOLOGY_OUTPUT_PATH: &str = "/scratch/symbology_data/";
 
 
 
