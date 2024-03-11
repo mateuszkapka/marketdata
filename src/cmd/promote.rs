@@ -17,6 +17,9 @@ pub fn promote(target: &PromoteTarget){
             rsync(
                 scratch::SYMBOLOGY_OUTPUT_PATH,
                 format!("{}:{}", nas::NAS_HOSTNAME, nas::NAS_SYMBOLOGY_OUTPUT_PATH).as_str());
+            rsync(
+                scratch::AGGREGATES_OUTPUT_PATH,
+                format!("{}:{}", nas::NAS_HOSTNAME, nas::NAS_AGGREGATES_OUTPUT_PATH).as_str());
         },
         PromoteTarget::Ticks => {
             rsync(
