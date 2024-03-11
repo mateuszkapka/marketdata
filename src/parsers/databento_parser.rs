@@ -62,6 +62,7 @@ impl<'a> NasdaqParser<'a>{
         result
     }
 
+    #[allow(deprecated)]
     fn process_one(&self, record: &Option<RecordRef>, symbology: &HashMap<u32, String>) -> Option<Event>{
         match record {
             Some(r) =>

@@ -7,6 +7,7 @@ fn ensure_env(){
     ensure_folder("/scratch/data").unwrap();
     ensure_folder("/scratch/normalised_data/").unwrap();
     ensure_folder("/scratch/symbology_data").unwrap();
+    ensure_folder("/scratch/aggregate_data").unwrap();
 }
 
 pub fn pull(){

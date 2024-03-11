@@ -17,6 +17,7 @@ pub const NASDAQ_PATH_TO_SYMBOLOGY: &str = "/scratch/data/ticks/NASDAQ/symbology
 
 pub const NORMALISED_OUTPUT_PATH: &str = "/scratch/normalised_data/";
 pub const SYMBOLOGY_OUTPUT_PATH: &str = "/scratch/symbology_data/";
+pub const AGGREGATES_OUTPUT_PATH: &str = "/scratch/aggregate_data/";
 
 
 
@@ -29,4 +30,9 @@ pub fn get_normalised_path(date: &NaiveDate, parser_type: &ParserType) -> String
 #[allow(dead_code)]
 pub fn get_symbology_path(date: &NaiveDate, parser_type: &ParserType) -> String {
     format!("{}/{}_{}.parquet", SYMBOLOGY_OUTPUT_PATH, date.format("%Y%m%d"), parser_type)
+}
+
+#[allow(dead_code)]
+pub fn get_aggregates_path(date: &NaiveDate, parser_type: &ParserType) -> String {
+    format!("{}/{}_{}.parquet", AGGREGATES_OUTPUT_PATH, date.format("%Y%m%d"), parser_type)
 }

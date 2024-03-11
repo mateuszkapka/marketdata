@@ -26,6 +26,7 @@ where
     TFilter: ParquetFilter
 {
 
+    #[allow(deprecated)]
     pub fn read_market_data(&mut self, filename: &str) {
         let schema = get_market_data_schema();
         let colums_mapping = map_columns_to_indexes(&schema);

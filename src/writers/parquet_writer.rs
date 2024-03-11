@@ -14,9 +14,9 @@ use parquet::{
     file::properties::WriterProperties,
 };
 
-use crate::{
-    data::{event::Event, event_header::EventHeader}, writers::base_writer::*
-};
+use crate::writers::base_writer::BaseWriter;
+use crate::aggregates::aggregate_framework::AggregateValue;
+use crate::data::{event::Event, event_header::EventHeader};
 
 pub struct ParquetWriter {
     writer: ArrowWriter<File>
@@ -46,6 +46,7 @@ impl ParquetWriter{
 }
 
 impl BaseWriter for ParquetWriter {
+    #[allow(deprecated)]
     fn write_matket_data(&mut self, dataset: &Vec<Event>) {
         info!("Starting to write data");
         let mut timestamp_data: Vec<i64> = Vec::new();
@@ -149,5 +150,37 @@ impl BaseWriter for ParquetWriter {
             .expect("Unable to write the next batch!");
 
         info!("Writing finished")
+    }
+
+    #[allow(deprecated)]
+    fn write_aggregates(&mut self, agregates: &Vec<AggregateValue>){
+        let mut symbols = Vec::new();
+        let mut slices: Vec<i64> = Vec::new();
+        let mut aggregate_names = Vec::new();
+        let mut values = Vec::new();
+
+        info!("Starting to write data");
+        for row in agregates{
+            symbols.push(row.symbol.clone());
+            slices.push(row.slice.timestamp_millis());
+            aggregate_names.push(row.aggregate_name.clone());
+            values.push(row.value);
+        }
+
+        let batch = RecordBatch::try_from_iter(vec![
+            ("symbol", Arc::new(StringArray::from(symbols)) as ArrayRef),
+            ("slice", Arc::new(TimestampMillisecondArray::from(slices)) as ArrayRef),
+            ("aggregate_name", Arc::new(StringArray::from(aggregate_names)) as ArrayRef),
+            ("value", Arc::new(Float64Array::from(values)) as ArrayRef),
+        ])
+        .unwrap();
+
+        info!("Data prepared, writing to disk");
+        self.writer
+        .write(&batch)
+        .expect("Unable to write the next batch!");
+
+        info!("Writing finished")
+
     }
 }

@@ -29,6 +29,20 @@ pub fn get_market_data_schema() -> Schema {
 }
 
 #[allow(dead_code)]
+pub fn get_aggregates_schema() -> Schema{
+    Schema::new(vec![
+        Field::new("symbol", DataType::Utf8, true),
+        Field::new(
+            "slice",
+            DataType::Timestamp(arrow::datatypes::TimeUnit::Millisecond, None),
+            false,
+        ),
+        Field::new("aggregate_name", DataType::Utf8, true),
+        Field::new("value", DataType::Float64, true),
+    ])
+}
+
+#[allow(dead_code)]
 pub fn map_columns_to_indexes(schema: &Schema) -> HashMap<String, usize>{
     let mut result = HashMap::new();
 
