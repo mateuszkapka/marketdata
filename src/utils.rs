@@ -1,4 +1,4 @@
-use std::{fs, io::{stderr, stdout, Error}, process::Command};
+use std::{fs, io::Error, process::Command};
 
 #[allow(dead_code)]
 pub fn ensure_folder(path: &str) -> Result<(), Error>{
