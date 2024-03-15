@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
-use aggregates::{aggregate_framework::AggregateFramework, test_aggregates::VolumeAggregate};
+use aggregates::aggregate_framework::register_default_aggregates;
+use aggregates::aggregate_framework::AggregateFramework;
 use chrono::NaiveDate;
 use parsers::parser::ParserType;
 use pyo3::prelude::*;
@@ -25,12 +26,17 @@ fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
 }
 
 #[pyfunction]
-fn compute_aggregates(market: &str, symbol: Option<&str>) -> PyResult<PyDataFrame> {
+fn compute_aggregates(market: &str, symbol: Option<&str>, aggregate: Option<&str>) -> PyResult<PyDataFrame> {
     let source = ParserType::from_str(&market).expect("Invalid value for argument source!");
     let date = NaiveDate::from_ymd_opt(2024, 01, 22).unwrap();
     let filter = symbol.map_or_else(|| None, |x| Some(SymbolFilter::new(x)));
     let mut framework = AggregateFramework::new(&source, &date, filter);
-    framework.register_aggregate::<VolumeAggregate>();
+    
+    match aggregate {
+        Some(agg) => framework.register_aggregate_by_name(agg).unwrap(),
+        None => register_default_aggregates(&mut framework).unwrap()
+    };
+
     let result = framework.run().unwrap_or_else(|err| panic!("Calculating aggregates failed: {}", err));
 
     let mut symbols = Vec::new();
