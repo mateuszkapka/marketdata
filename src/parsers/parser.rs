@@ -44,7 +44,7 @@ impl Parser {
                 parser.parse_market_data(date)
             },
             ParserType::NASDAQ => {
-                let mut parser = databento_parser::NasdaqParser::new(writer);
+                let mut parser = databento_parser::NasdaqParser::new(writer, date);
                 parser.parse_market_data(date)
             }
         }

@@ -6,10 +6,8 @@ mod readers;
 mod aggregates;
 mod paths;
 mod utils;
-use log::info;
+use clap::command;
 use simple_logger::{SimpleLogger, set_up_color_terminal};
-
-use std::str::FromStr;
 
 use chrono::NaiveDate;
 use parsers::parser::*;
@@ -17,21 +15,27 @@ use writers::{base_writer::BaseWriter, *};
 
 use crate::{paths::scratch::get_normalised_path, parquet_writer::ParquetWriter, schemas::get_market_data_schema};
 
+use clap::arg;
+
  fn main() {
     set_up_color_terminal();
     SimpleLogger::new().init().unwrap();
 
-    let cmd = clap::Command::new("raw")
+    let matches = command!() // requires `cargo` feature
+    .arg(arg!([source] "Surce")
+        .value_parser(clap::builder::EnumValueParser::<ParserType>::new()))
     .arg(
-        clap::Arg::new("source")
-            .value_parser(clap::builder::PossibleValuesParser::new(["WSE", "NASDAQ"]))
-            .required(true)
-    );
-    info!("Starting...");
-    let matches = cmd.try_get_matches().unwrap();
-    let date = NaiveDate::from_ymd_opt(2024, 01, 22).unwrap();
-    let source_str: String = matches.get_one::<String>("source").unwrap().clone();
-    let source = ParserType::from_str(&source_str).expect("Invalid value for argument source!");
+        arg!(
+            -d --date <DATE> "Date to run the aggregator on"
+        )
+        // We don't have syntax yet for optional options, so manually calling `required`
+        .required(false)
+    )
+    .get_matches();
+
+    let date: NaiveDate = NaiveDate::parse_from_str(matches.get_one::<String>("date").unwrap(), "%Y%m%d")
+            .unwrap_or_else(|err| panic!("Invalid parameter date: {}", err));
+    let source  = matches.get_one::<ParserType>("source").unwrap();
 
     let parser = parsers::parser::Parser {};
     let mut writer: Box<ParquetWriter> = Box::new(ParquetWriter::new(
@@ -39,6 +43,6 @@ use crate::{paths::scratch::get_normalised_path, parquet_writer::ParquetWriter, 
         get_market_data_schema()
     ));
 
-    parser.parse_market_data(&date, source, &mut writer);
+    parser.parse_market_data(&date, source.clone(), &mut writer);
     writer.finalize();
 }

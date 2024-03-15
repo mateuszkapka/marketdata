@@ -19,8 +19,8 @@ use heapless::sorted_linked_list::{SortedLinkedList, Min};
 const BATCH_SIZE: usize = 1_000_000;
 
 pub struct NasdaqParser<'a>{
-    path_to_quotes: &'a str,
-    path_to_trades: &'a str,
+    path_to_quotes: String,
+    path_to_trades: String,
     path_to_symbology: &'a str,
     writer: &'a mut Box<ParquetWriter>
 }
@@ -38,10 +38,10 @@ pub struct NasdaqSymbology{
 }
 
 impl<'a> NasdaqParser<'a>{
-    pub fn new(writer: &'a mut Box<ParquetWriter>) -> Self{
+    pub fn new(writer: &'a mut Box<ParquetWriter>, date: &NaiveDate) -> Self{
         NasdaqParser{
-            path_to_quotes: scratch::NASDAQ_PATH_TO_QUOTES,
-            path_to_trades: scratch::NASDAQ_PATH_TO_TRADES,
+            path_to_quotes:  scratch::get_nasdaq_path_to_quotes(date),
+            path_to_trades: scratch::get_nasdaq_path_to_quotes(date),
             path_to_symbology: scratch::NASDAQ_PATH_TO_SYMBOLOGY,
             writer: writer
         }
@@ -104,8 +104,8 @@ impl<'a> NasdaqParser<'a>{
 
         let symbology: HashMap<u32, String> = self.load_symbology(date);
 
-        let mut trades_decoder = DbnDecoder::from_zstd_file(self.path_to_trades).unwrap();
-        let mut quotes_decorer = DbnDecoder::from_zstd_file(self.path_to_quotes).unwrap();
+        let mut trades_decoder = DbnDecoder::from_zstd_file(&self.path_to_trades).unwrap();
+        let mut quotes_decorer = DbnDecoder::from_zstd_file(&self.path_to_quotes).unwrap();
 
         let latest_trade = self.process_one(&trades_decoder.decode_record_ref().unwrap(), &symbology).unwrap();
         let latest_quote = self.process_one(&quotes_decorer.decode_record_ref().unwrap(), &symbology).unwrap();
