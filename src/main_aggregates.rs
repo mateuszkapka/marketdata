@@ -8,7 +8,7 @@ mod paths;
 use aggregates::{aggregate_framework::AggregateFramework, test_aggregates::VolumeAggregate};
 use parsers::parser::ParserType;
 use paths::scratch::get_aggregates_path;
-use readers::filters::{NoOpFilter, ParquetFilter, SymbolFilter};
+use readers::filters::SymbolFilter;
 use writers::{parquet_writer::ParquetWriter, schemas::get_aggregates_schema};
 use std::process::exit;
 use chrono::NaiveDate;
@@ -31,23 +31,20 @@ fn main() {
     let matches = cmd.get_matches();
     let source  = matches.get_one::<ParserType>("source").unwrap();
 
-    let filter = matches.get_one::<String>("symbol");
+    let filter_str = matches.get_one::<String>("symbol");
+    let filter = filter_str.map_or_else(|| None, |x| Some(SymbolFilter::new(&x)));
 
-    if filter.is_none(){
-        let framework = AggregateFramework::new(&source, &date, NoOpFilter{});
-        run_agg_framework(framework, &source, &date);
-    } else{
-        let framework = AggregateFramework::new(&source, &date, SymbolFilter::new(filter.unwrap()));
-        run_agg_framework(framework, &source, &date);
-    }
+    let framework = AggregateFramework::new(&source, &date, filter);
+    run_agg_framework(framework, &source, &date);
     
 
     exit(0);
 }
 
-fn run_agg_framework<T: ParquetFilter + Clone>(mut framework: AggregateFramework<T>, source: &ParserType, date: &NaiveDate){
+fn run_agg_framework(mut framework: AggregateFramework, source: &ParserType, date: &NaiveDate){
     framework.register_aggregate::<VolumeAggregate>();
-    let result = framework.run();
+    let result = framework.run()
+        .unwrap_or_else(|err| panic!("Calculating aggregates failed: {}", err));
 
     let mut writer: Box<ParquetWriter> = Box::new(ParquetWriter::new(
         get_aggregates_path(&date, &source),

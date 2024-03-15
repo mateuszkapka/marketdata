@@ -4,7 +4,7 @@ use aggregates::{aggregate_framework::AggregateFramework, test_aggregates::Volum
 use chrono::NaiveDate;
 use parsers::parser::ParserType;
 use pyo3::prelude::*;
-use readers::filters::NoOpFilter;
+
 mod data;
 mod parsers;
 mod writers;
@@ -16,6 +16,7 @@ mod utils;
 use pyo3_polars::PyDataFrame;
 use polars::prelude::*;
 use polars::df;
+use readers::filters::SymbolFilter;
 
 /// Formats the sum of two numbers as string.
 #[pyfunction]
@@ -24,12 +25,13 @@ fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
 }
 
 #[pyfunction]
-fn compute_aggregates(market: &str) -> PyResult<PyDataFrame> {
+fn compute_aggregates(market: &str, symbol: Option<&str>) -> PyResult<PyDataFrame> {
     let source = ParserType::from_str(&market).expect("Invalid value for argument source!");
     let date = NaiveDate::from_ymd_opt(2024, 01, 22).unwrap();
-    let mut framework = AggregateFramework::new(&source, &date, NoOpFilter{});
+    let filter = symbol.map_or_else(|| None, |x| Some(SymbolFilter::new(x)));
+    let mut framework = AggregateFramework::new(&source, &date, filter);
     framework.register_aggregate::<VolumeAggregate>();
-    let result = framework.run();
+    let result = framework.run().unwrap_or_else(|err| panic!("Calculating aggregates failed: {}", err));
 
     let mut symbols = Vec::new();
     let mut slices = Vec::new();

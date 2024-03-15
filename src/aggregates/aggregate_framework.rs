@@ -1,13 +1,14 @@
 use std::collections::HashMap;
 
 use chrono::{NaiveDate, NaiveDateTime};
+use simple_error::SimpleError;
 
 use super::aggregate_base::{Aggregate, AggregateNew};
 use crate::paths::scratch::{get_normalised_path, get_symbology_path};
 use crate::data::event::Event;
 use crate::data::event_header::EventHeader;
 use crate::parsers::parser::ParserType;
-use crate::readers::filters::ParquetFilter;
+use crate::readers::filters::SymbolFilter;
 use crate::readers::parquet_reader::{ParquetReader, ParquetStreamReader};
 use crate::aggregates::schedule::SliceSchedule;
 use crate::aggregates::schedule::WallClockSliceSchedule;
@@ -20,20 +21,18 @@ pub struct AggregateValue{
     pub value: f64
 }
 
-pub struct AggregateFramework<'a, TFilter>
-where TFilter: ParquetFilter + Clone {
+pub struct AggregateFramework<'a> {
     aggregates: HashMap<String, Vec<Box<dyn Aggregate + 'a>>>,
     symbology: Vec<String>,
     date: NaiveDate,
     parser_type: &'a ParserType,
     slice_schedule: Box<dyn SliceSchedule>,
     aggregate_values: Vec<AggregateValue>,
-    filter: TFilter
+    filter: Option<SymbolFilter<'a>>
 }
 
-impl<'a, TFilter> AggregateFramework<'a, TFilter>
-where TFilter: ParquetFilter + Clone {
-    pub fn new(parser_type: &'a ParserType, date: &NaiveDate, filter: TFilter) -> Self{
+impl<'a> AggregateFramework<'a> {
+    pub fn new(parser_type: &'a ParserType, date: &NaiveDate, filter: Option<SymbolFilter<'a>>) -> Self{
         
         AggregateFramework{
             aggregates: HashMap::new(),
@@ -68,7 +67,7 @@ where TFilter: ParquetFilter + Clone {
         }
     }
 
-    pub fn run(&mut self)  -> &Vec<AggregateValue>{
+    pub fn run(&mut self)  -> Result<&Vec<AggregateValue>, SimpleError>{
 
         let mut reader = ParquetStreamReader{
             filter: self.filter.clone(),
@@ -116,8 +115,8 @@ where TFilter: ParquetFilter + Clone {
         };
         
         let filename = get_normalised_path(&self.date, &self.parser_type);
-        reader.read_market_data(&filename);
-        &self.aggregate_values
+        reader.read_market_data(&filename)?;
+        Ok(&self.aggregate_values)
 
     }
 }
