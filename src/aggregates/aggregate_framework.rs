@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use chrono::{NaiveDate, NaiveDateTime};
 use simple_error::SimpleError;
 
-use super::aggregate_base::{Aggregate, AggregateNew};
+use super::aggregate_base::{aggregate_from_name, Aggregate, AggregateNew, DEFAULT_AGGREGATES};
 use crate::paths::scratch::{get_normalised_path, get_symbology_path};
 use crate::data::event::Event;
 use crate::data::event_header::EventHeader;
@@ -66,6 +66,22 @@ impl<'a> AggregateFramework<'a> {
             aggregates_vector.push(Box::new(TAggregate::new(&symbol)));
         }
     }
+    
+    pub fn register_aggregate_by_name(& mut self, agg_name: &str) -> Result<(), SimpleError>{
+        for symbol in &self.symbology {
+            let aggregates_vector: & mut Vec<Box<dyn Aggregate>> = match self.aggregates.get_mut(&symbol[..]) {
+                None => {
+                    self.aggregates.insert(symbol.clone(), Vec::new());
+                    self.aggregates.get_mut(symbol).unwrap()
+                },
+                Some(value) => value
+            };
+
+            aggregates_vector.push(aggregate_from_name(&agg_name, &symbol)?);
+        }
+
+        Ok(())
+    }
 
     pub fn run(&mut self)  -> Result<&Vec<AggregateValue>, SimpleError>{
 
@@ -119,4 +135,13 @@ impl<'a> AggregateFramework<'a> {
         Ok(&self.aggregate_values)
 
     }
+}
+
+
+pub fn register_default_aggregates(aggregate_framework: &mut AggregateFramework) -> Result<(),SimpleError>{
+    for agg in DEFAULT_AGGREGATES{
+        aggregate_framework.register_aggregate_by_name(agg)?
+    }
+
+    Ok(())
 }
