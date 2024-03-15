@@ -5,7 +5,8 @@ mod parsers;
 mod readers;
 mod paths;
 
-use aggregates::{aggregate_framework::AggregateFramework, test_aggregates::VolumeAggregate};
+use aggregates::aggregate_framework::{register_default_aggregates, AggregateFramework};
+use clap::{arg, command};
 use parsers::parser::ParserType;
 use paths::scratch::get_aggregates_path;
 use readers::filters::SymbolFilter;
@@ -16,23 +17,28 @@ use crate::writers::base_writer::BaseWriter;
 
 
 fn main() {
-    let date = NaiveDate::from_ymd_opt(2024, 01, 22).unwrap();
-
-    let cmd = clap::Command::new("raw")
+    let matches = command!() // requires `cargo` feature
+    .arg(arg!([source] "Surce")
+        .value_parser(clap::builder::EnumValueParser::<ParserType>::new()))
+    .arg(arg!(
+        -s --symbol <SYMBOL> "Filter by symbol"
+    ).required(false))
     .arg(
-        clap::Arg::new("source")
-            .value_parser(clap::builder::EnumValueParser::<ParserType>::new())
-            .required(true)
-    ).arg(
-        clap::Arg::new("symbol")
-            .required(false)
-    );
-    
-    let matches = cmd.get_matches();
-    let source  = matches.get_one::<ParserType>("source").unwrap();
+        arg!(
+            -d --date <DATE> "Date to run the aggregator on"
+        )
+        // We don't have syntax yet for optional options, so manually calling `required`
+        .required(false)
+    )
+    .get_matches();
+
+    let date: NaiveDate = NaiveDate::parse_from_str(matches.get_one::<String>("date").unwrap(), "%Y%m%d")
+            .unwrap_or_else(|err| panic!("Invalid parameter date: {}", err));
+        
 
     let filter_str = matches.get_one::<String>("symbol");
     let filter = filter_str.map_or_else(|| None, |x| Some(SymbolFilter::new(&x)));
+    let source  = matches.get_one::<ParserType>("source").unwrap();
 
     let framework = AggregateFramework::new(&source, &date, filter);
     run_agg_framework(framework, &source, &date);
@@ -42,7 +48,8 @@ fn main() {
 }
 
 fn run_agg_framework(mut framework: AggregateFramework, source: &ParserType, date: &NaiveDate){
-    framework.register_aggregate::<VolumeAggregate>();
+    register_default_aggregates(&mut framework)
+        .unwrap_or_else(|err| panic!("Aggregate registration failed: {}", err));
     let result = framework.run()
         .unwrap_or_else(|err| panic!("Calculating aggregates failed: {}", err));
 

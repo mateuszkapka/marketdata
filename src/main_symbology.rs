@@ -9,6 +9,7 @@ mod readers;
 use core::panic;
 
 use chrono::NaiveDate;
+use clap::{arg, command};
 use parsers::parser::*;
 use writers::*;
 
@@ -16,16 +17,21 @@ use crate::{base_writer::BaseWriter, paths::scratch::{get_normalised_path, get_s
 
 fn main() {
     
-    let date = NaiveDate::from_ymd_opt(2024, 01, 22).unwrap();
-
-    let cmd = clap::Command::new("raw")
+    let matches = command!() // requires `cargo` feature
+    .arg(arg!([source] "Surce")
+        .value_parser(clap::builder::EnumValueParser::<ParserType>::new()))
     .arg(
-        clap::Arg::new("source")
-            .value_parser(clap::builder::EnumValueParser::<ParserType>::new())
-            .required(true)
-    );
-    
-    let matches = cmd.get_matches();
+        arg!(
+            -d --date <DATE> "Date to run the aggregator on"
+        )
+        // We don't have syntax yet for optional options, so manually calling `required`
+        .required(false)
+    )
+    .get_matches();
+
+    let date: NaiveDate = NaiveDate::parse_from_str(matches.get_one::<String>("date").unwrap(), "%Y%m%d")
+            .unwrap_or_else(|err| panic!("Invalid parameter date: {}", err));
+        
     let source  = matches.get_one::<ParserType>("source").unwrap();
     let symbology = generate_symbology(&get_normalised_path(&date, &source))
                 .unwrap_or_else(|err| panic!("Unable to load symbology: {}", err));

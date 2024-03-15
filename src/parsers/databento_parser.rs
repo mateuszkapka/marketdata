@@ -21,7 +21,7 @@ const BATCH_SIZE: usize = 1_000_000;
 pub struct NasdaqParser<'a>{
     path_to_quotes: String,
     path_to_trades: String,
-    path_to_symbology: &'a str,
+    path_to_symbology: String,
     writer: &'a mut Box<ParquetWriter>
 }
 
@@ -42,13 +42,13 @@ impl<'a> NasdaqParser<'a>{
         NasdaqParser{
             path_to_quotes:  scratch::get_nasdaq_path_to_quotes(date),
             path_to_trades: scratch::get_nasdaq_path_to_quotes(date),
-            path_to_symbology: scratch::NASDAQ_PATH_TO_SYMBOLOGY,
+            path_to_symbology: scratch::get_symbology_path_to_trades(date),
             writer: writer
         }
     }
 
     fn load_symbology(&self, _date: &NaiveDate) -> HashMap<u32, String>{
-        let file = fs::File::open(self.path_to_symbology)
+        let file = fs::File::open(&self.path_to_symbology)
             .expect("Unable to open symbology file");
         let json: NasdaqSymbology = serde_json::from_reader(file)
             .expect("Uable to parse symbology file ");

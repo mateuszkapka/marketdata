@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["NASDAQ"],
+            "args": ["nasdaq", "--date", "20240123"],
             "cwd": "${workspaceFolder}"
         },
         {
