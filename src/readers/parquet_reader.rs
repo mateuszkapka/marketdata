@@ -6,28 +6,27 @@ use crate::{writers::schemas::{get_market_data_schema, get_symbology_schena, map
 
 use chrono::NaiveDateTime;
 use parquet::{file::{reader::FileReader, serialized_reader::SerializedFileReader}, record::RowAccessor};
+use simple_error::SimpleError;
 
-use super::filters::ParquetFilter;
+use super::filters::{ParquetFilter, SymbolFilter};   
 
 pub struct ParquetReader
 {}
-pub struct ParquetStreamReader<TFilter, F>
+pub struct ParquetStreamReader<'a, F>
 where
     F: FnMut(Event),
-    TFilter: ParquetFilter
 {
     pub on_event: F,
-    pub filter: TFilter
+    pub filter: Option<SymbolFilter<'a>>
 }
 
-impl<TFilter, F> ParquetStreamReader<TFilter, F>
+impl<'a, F> ParquetStreamReader<'a, F>
 where
-    F: FnMut(Event),
-    TFilter: ParquetFilter
+    F: FnMut(Event)
 {
 
     #[allow(deprecated)]
-    pub fn read_market_data(&mut self, filename: &str) {
+    pub fn read_market_data(&mut self, filename: &str) -> Result<(), SimpleError> {
         let schema = get_market_data_schema();
         let colums_mapping = map_columns_to_indexes(&schema);
 
@@ -40,7 +39,7 @@ where
         while let Some(record_result) = arrow_reader.next() {
             let record = record_result.unwrap();
             let event_type= record.get_string(colums_mapping.get("type").unwrap().clone()).unwrap().clone(); 
-            if self.filter.should_filter_row(&record, &colums_mapping){
+            if !self.filter.is_none() && self.filter.unwrap().should_filter_row(&record, &colums_mapping){
                 continue;
             }
 
@@ -67,6 +66,8 @@ where
                  _ => panic!("Unable to parse event type {}", &event_type)
                  }
         }
+
+        Ok(())
     }
 
     

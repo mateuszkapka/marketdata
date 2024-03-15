@@ -1545,6 +1545,7 @@ dependencies = [
  "pyo3-polars",
  "serde",
  "serde_json",
+ "simple-error",
  "simple_logger",
  "tokio 0.2.25",
 ]
@@ -2856,6 +2857,12 @@ name = "simdutf8"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f27f6278552951f1f2b8cf9da965d10969b2efdea95a6ec47987ab46edfe263a"
+
+[[package]]
+name = "simple-error"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8542b68b8800c3cda649d2c72d688b6907b30f1580043135d61669d4aad1c175"
 
 [[package]]
 name = "simple_logger"

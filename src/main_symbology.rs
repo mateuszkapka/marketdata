@@ -6,6 +6,8 @@ mod paths;
 mod aggregates;
 mod readers;
 
+use core::panic;
+
 use chrono::NaiveDate;
 use parsers::parser::*;
 use writers::*;
@@ -25,7 +27,8 @@ fn main() {
     
     let matches = cmd.get_matches();
     let source  = matches.get_one::<ParserType>("source").unwrap();
-    let symbology = generate_symbology(&get_normalised_path(&date, &source));
+    let symbology = generate_symbology(&get_normalised_path(&date, &source))
+                .unwrap_or_else(|err| panic!("Unable to load symbology: {}", err));
 
     let mut writer: Box<ParquetWriter> = Box::new(ParquetWriter::new(
         get_symbology_path(&date, &source),
