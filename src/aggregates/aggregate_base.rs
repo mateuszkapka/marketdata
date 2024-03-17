@@ -1,9 +1,9 @@
 use chrono::NaiveDateTime;
-use simple_error::SimpleError;
+
 
 use crate::data::{quote::Quote, trade::Trade};
 
-use super::test_aggregates::{SimpleAggregate, VolumeAggregate};
+use super::aggregate_framework::AggregateFrameworkContext;
 
 pub trait Aggregate{
     fn on_quote(&mut self, quote: &Quote);
@@ -15,18 +15,9 @@ pub trait Aggregate{
 }
 
 pub trait AggregateNew{
-    fn new(symbol: &str) -> Self;
+    fn new(symbol: &str, context: & AggregateFrameworkContext) -> Self;
 }
 
 pub const DEFAULT_AGGREGATES: &'static [&'static str] = &["Volume"];
-
-pub fn aggregate_from_name(agg_name: &str, symbol: &str) -> Result<Box<dyn Aggregate>, SimpleError>  {
-    match agg_name {
-        "Volume" => Ok(Box::new(VolumeAggregate::new(symbol))),
-        "Test" => Ok(Box::new(SimpleAggregate::new(symbol))),
-        _ => Err(SimpleError::new(format!("Unknown aggregate type {}", agg_name)))
-    }
-}
-
 
 

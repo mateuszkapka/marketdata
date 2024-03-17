@@ -1,6 +1,5 @@
 use std::str::FromStr;
 
-use aggregates::aggregate_framework::register_default_aggregates;
 use aggregates::aggregate_framework::AggregateFramework;
 use chrono::NaiveDate;
 use parsers::parser::ParserType;
@@ -34,7 +33,7 @@ fn compute_aggregates(market: &str, symbol: Option<&str>, aggregate: Option<&str
     
     match aggregate {
         Some(agg) => framework.register_aggregate_by_name(agg).unwrap(),
-        None => register_default_aggregates(&mut framework).unwrap()
+        None => framework.register_default_aggregates().unwrap()
     };
 
     let result = framework.run().unwrap_or_else(|err| panic!("Calculating aggregates failed: {}", err));

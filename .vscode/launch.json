@@ -72,7 +72,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["wse"],
+            "args": ["wse","--date","20240122" ,"--aggregates","Volume,Test"],
             "cwd": "${workspaceFolder}"
         }
     ]
