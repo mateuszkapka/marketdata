@@ -1,9 +1,11 @@
 use std::collections::HashMap;
+use std::rc::Rc;
 
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use simple_error::SimpleError;
 
-use super::aggregate_base::{aggregate_from_name, Aggregate, AggregateNew, DEFAULT_AGGREGATES};
+use super::aggregate_base::{Aggregate, AggregateNew, DEFAULT_AGGREGATES};
+use super::test_aggregates::{SimpleAggregate, VolumeAggregate};
 use crate::paths::scratch::{get_normalised_path, get_symbology_path};
 use crate::data::event::Event;
 use crate::data::event_header::EventHeader;
@@ -27,22 +29,23 @@ pub struct AggregateFramework<'a> {
     date: NaiveDate,
     parser_type: &'a ParserType,
     slice_schedule: Box<dyn SliceSchedule>,
-    aggregate_values: Vec<AggregateValue>,
-    filter: Option<SymbolFilter<'a>>
+    read_cache: Rc<AggregateReadCache>,
+    filter: Option<SymbolFilter<'a>>,
 }
 
 impl<'a> AggregateFramework<'a> {
-    pub fn new(parser_type: &'a ParserType, date: &NaiveDate, filter: Option<SymbolFilter<'a>>) -> Self{
-        
-        AggregateFramework{
+
+    pub fn new(parser_type: &'a ParserType, date: &NaiveDate, filter: Option<SymbolFilter<'a>>) -> Self{ 
+        let framework = AggregateFramework{
             aggregates: HashMap::new(),
             symbology: Self::read_symbology(parser_type, date),
             date: date.clone(),
+            read_cache: Rc::new(AggregateReadCache::new(date)),
             parser_type,
             slice_schedule: Box::new(WallClockSliceSchedule::new(date)),
-            aggregate_values: Vec::new(),
             filter
-        }
+        };
+        framework
     }
 
     fn read_symbology(parser_type: &ParserType, date: &NaiveDate) -> Vec<String> {
@@ -52,13 +55,15 @@ impl<'a> AggregateFramework<'a> {
         reader.read_symbology(&filepath)
     }
 
-    pub fn register_aggregate<TAggregate> (& mut self)
+    pub fn register_aggregate<TAggregate> (&mut self)
     where TAggregate: Aggregate + AggregateNew + 'a{
         for symbol in &self.symbology {
+            let mut context = AggregateFrameworkContext::new();
+            context.set_cache(self.read_cache.clone());
             let aggregates_vector: & mut Vec<Box<dyn Aggregate>> = match self.aggregates.get_mut(&symbol[..]) {
                 None => {
                     self.aggregates.insert(symbol.clone(), Vec::new());
-                    self.aggregates.get_mut(symbol).unwrap()
+                    self.aggregates.get_mut(&symbol.clone()).unwrap()
                 },
                 Some(value) => value
             };
@@ -66,19 +71,33 @@ impl<'a> AggregateFramework<'a> {
             aggregates_vector.push(Box::new(TAggregate::new(&symbol)));
         }
     }
-    
-    pub fn register_aggregate_by_name(& mut self, agg_name: &str) -> Result<(), SimpleError>{
-        for symbol in &self.symbology {
-            let aggregates_vector: & mut Vec<Box<dyn Aggregate>> = match self.aggregates.get_mut(&symbol[..]) {
-                None => {
-                    self.aggregates.insert(symbol.clone(), Vec::new());
-                    self.aggregates.get_mut(symbol).unwrap()
-                },
-                Some(value) => value
-            };
 
-            aggregates_vector.push(aggregate_from_name(&agg_name, &symbol)?);
+    pub fn register_aggregate_list_by_name(&mut self, agg_names: Vec<&str>) -> Result<(), SimpleError>{
+        for agg in agg_names{
+            for symbol in &self.symbology {
+                let aggregates_vector: & mut Vec<Box<dyn Aggregate>> = match self.aggregates.get_mut(&symbol[..]) {
+                    None => {
+                        self.aggregates.insert(symbol.clone(), Vec::new());
+                        self.aggregates.get_mut(symbol).unwrap()
+                    },
+                    Some(value) => value
+                };
+    
+                
+    
+                aggregates_vector.push(match agg {
+                    "Volume" => Box::new(VolumeAggregate::new(symbol)) as Box<dyn Aggregate>,
+                    "Test" => Box::new(SimpleAggregate::new(symbol)),
+                    _ => return Err(SimpleError::new(format!("Unknown aggregate type {}", agg)))
+                });
+            }
         }
+
+        Ok(())
+    }
+    
+    pub fn register_aggregate_by_name(&mut self, agg_name: &str) -> Result<(), SimpleError>{
+        self.register_aggregate_list_by_name(vec![agg_name])?;
 
         Ok(())
     }
@@ -115,13 +134,18 @@ impl<'a> AggregateFramework<'a> {
                     match self.aggregates.get_mut(event.get_symbol()) {
                         Some(aggregates_to_run) => {
                             for agg in aggregates_to_run {
-                                let value = agg.as_mut().compute_slice(slice_time);
-                                self.aggregate_values.push(AggregateValue{
-                                    symbol: agg.get_symbol().to_string(),
-                                    aggregate_name: agg.get_name().to_string(),
-                                    slice: slice_time.clone(),
-                                    value
-                                });
+                                let mut context = AggregateFrameworkContext::new();
+                                context.set_cache(self.read_cache.clone());
+                                let value = agg.as_mut().compute_slice(slice_time, &context);
+                                drop(context);
+                                {
+                                    Rc::get_mut(&mut self.read_cache).unwrap().push(AggregateValue{
+                                        symbol: agg.get_symbol().to_string(),
+                                        aggregate_name: agg.get_name().to_string(),
+                                        slice: slice_time.clone(),
+                                        value
+                                    });
+                                }
                             }
                         },
                         None => ()
@@ -132,16 +156,85 @@ impl<'a> AggregateFramework<'a> {
         
         let filename = get_normalised_path(&self.date, &self.parser_type);
         reader.read_market_data(&filename)?;
-        Ok(&self.aggregate_values)
+        Ok(&self.read_cache.aggregates)
 
     }
+
+    pub fn register_default_aggregates(&mut self) -> Result<(),SimpleError>{
+        self.register_aggregate_list_by_name(DEFAULT_AGGREGATES.to_vec())?;
+    
+        Ok(())
+    }
+
 }
 
 
-pub fn register_default_aggregates(aggregate_framework: &mut AggregateFramework) -> Result<(),SimpleError>{
-    for agg in DEFAULT_AGGREGATES{
-        aggregate_framework.register_aggregate_by_name(agg)?
+pub struct AggregateReadCache{
+    current_date: NaiveDate,
+    aggregates: Vec<AggregateValue>,
+    historical_aggregate_cache: HashMap<NaiveDate, Vec<AggregateValue>>
+}
+
+impl AggregateReadCache{
+    pub fn read_aggregate(_agg_name: &str, _slice: &NaiveTime, _date: &NaiveDate) -> f64{
+        unimplemented!();
     }
 
-    Ok(())
+    pub fn push(&mut self, value: AggregateValue){
+        self.aggregates.push(value);
+    }
+
+    pub fn get_todays_aggregates(&self) -> &Vec<AggregateValue>{
+        &self.aggregates
+    }
+
+    pub fn new(date: &NaiveDate) -> Self{
+        AggregateReadCache{
+            aggregates: Vec::new(),
+            current_date: date.clone(),
+            historical_aggregate_cache: HashMap::new()
+        }
+    }
+}
+
+pub struct AggregateFrameworkContext{
+    cache: Option<Rc<AggregateReadCache>>,
+}
+
+impl AggregateFrameworkContext{
+    fn new() -> Self{
+        AggregateFrameworkContext{
+            cache: None
+        }
+    }
+
+    pub fn agg_ref(&self, aggregate_name: &str, aggregate: &dyn Aggregate) -> AggregateReference {
+        AggregateReference{
+            aggregate_name: format!("{}Aggregate", aggregate_name), 
+            cache: self.cache.clone().unwrap(),
+            symbol: aggregate.get_symbol().to_string()
+        }
+    }
+
+    pub fn set_cache(&mut self, cache: Rc<AggregateReadCache>){
+        self.cache = Some(cache);
+    }
+}
+
+pub struct AggregateReference{
+    aggregate_name: String,
+    cache: Rc<AggregateReadCache>,
+    symbol: String
+}
+
+impl<'a> AggregateReference{
+    pub fn this_slice(&self) -> f64{
+        for value in self.cache.aggregates.iter().rev(){
+            if value.aggregate_name == self.aggregate_name && value.symbol == self.symbol{
+                return value.value;
+            }
+        }
+
+        panic!("Unable to find this slice for aggregate {} and symbol {} ", self.aggregate_name, self.symbol)
+    }
 }

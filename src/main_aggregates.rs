@@ -5,7 +5,7 @@ mod parsers;
 mod readers;
 mod paths;
 
-use aggregates::aggregate_framework::{register_default_aggregates, AggregateFramework};
+use aggregates::aggregate_framework::AggregateFramework;
 use clap::{arg, command};
 use parsers::parser::ParserType;
 use paths::scratch::get_aggregates_path;
@@ -30,6 +30,10 @@ fn main() {
         // We don't have syntax yet for optional options, so manually calling `required`
         .required(false)
     )
+    .arg(arg!(
+        -a --aggregates <AGGREGATE_NAME> "Comma delimited list of aggregates to run"
+    )
+    )
     .get_matches();
 
     let date: NaiveDate = NaiveDate::parse_from_str(matches.get_one::<String>("date").unwrap(), "%Y%m%d")
@@ -37,19 +41,22 @@ fn main() {
         
 
     let filter_str = matches.get_one::<String>("symbol");
+    let aggregates:Option<&String> = matches.get_one::<String>("aggregates");
     let filter = filter_str.map_or_else(|| None, |x| Some(SymbolFilter::new(&x)));
     let source  = matches.get_one::<ParserType>("source").unwrap();
 
-    let framework = AggregateFramework::new(&source, &date, filter);
-    run_agg_framework(framework, &source, &date);
-    
-
-    exit(0);
-}
-
-fn run_agg_framework(mut framework: AggregateFramework, source: &ParserType, date: &NaiveDate){
-    register_default_aggregates(&mut framework)
+    let mut framework = AggregateFramework::new(&source, &date, filter);
+    if let Some(aggregates) = aggregates {
+        for agg in aggregates.split(','){
+            framework.register_aggregate_by_name(&agg).unwrap();
+        }
+        
+    }
+    else{
+        framework.register_default_aggregates()
         .unwrap_or_else(|err| panic!("Aggregate registration failed: {}", err));
+    }
+    
     let result = framework.run()
         .unwrap_or_else(|err| panic!("Calculating aggregates failed: {}", err));
 
@@ -58,6 +65,9 @@ fn run_agg_framework(mut framework: AggregateFramework, source: &ParserType, dat
         get_aggregates_schema()
     ));
 
+
     writer.write_aggregates(result);
     writer.finalize();
+
+    exit(0);
 }
