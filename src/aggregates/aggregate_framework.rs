@@ -68,15 +68,13 @@ impl<'a> AggregateFramework<'a> {
                 Some(value) => value
             };
 
-            aggregates_vector.push(Box::new(TAggregate::new(&symbol,  &context)));
+            aggregates_vector.push(Box::new(TAggregate::new(&symbol)));
         }
     }
 
     pub fn register_aggregate_list_by_name(&mut self, agg_names: Vec<&str>) -> Result<(), SimpleError>{
         for agg in agg_names{
             for symbol in &self.symbology {
-                let mut context = AggregateFrameworkContext::new();
-                context.set_cache(self.read_cache.clone());
                 let aggregates_vector: & mut Vec<Box<dyn Aggregate>> = match self.aggregates.get_mut(&symbol[..]) {
                     None => {
                         self.aggregates.insert(symbol.clone(), Vec::new());
@@ -88,8 +86,8 @@ impl<'a> AggregateFramework<'a> {
                 
     
                 aggregates_vector.push(match agg {
-                    "Volume" => Box::new(VolumeAggregate::new(symbol,  &context)) as Box<dyn Aggregate>,
-                    "Test" => Box::new(SimpleAggregate::new(symbol,  &context)),
+                    "Volume" => Box::new(VolumeAggregate::new(symbol)) as Box<dyn Aggregate>,
+                    "Test" => Box::new(SimpleAggregate::new(symbol)),
                     _ => return Err(SimpleError::new(format!("Unknown aggregate type {}", agg)))
                 });
             }
@@ -136,7 +134,10 @@ impl<'a> AggregateFramework<'a> {
                     match self.aggregates.get_mut(event.get_symbol()) {
                         Some(aggregates_to_run) => {
                             for agg in aggregates_to_run {
-                                let value = agg.as_mut().compute_slice(slice_time);
+                                let mut context = AggregateFrameworkContext::new();
+                                context.set_cache(self.read_cache.clone());
+                                let value = agg.as_mut().compute_slice(slice_time, &context);
+                                drop(context);
                                 {
                                     Rc::get_mut(&mut self.read_cache).unwrap().push(AggregateValue{
                                         symbol: agg.get_symbol().to_string(),
@@ -207,11 +208,11 @@ impl AggregateFrameworkContext{
         }
     }
 
-    pub fn get_aggregate_reference(&self, aggregate_name: &str, symbol: &str) -> AggregateReference {
+    pub fn agg_ref(&self, aggregate_name: &str, aggregate: &dyn Aggregate) -> AggregateReference {
         AggregateReference{
-            aggregate_name: aggregate_name.to_string(), 
+            aggregate_name: format!("{}Aggregate", aggregate_name), 
             cache: self.cache.clone().unwrap(),
-            symbol: symbol.to_string()
+            symbol: aggregate.get_symbol().to_string()
         }
     }
 

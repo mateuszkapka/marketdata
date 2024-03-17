@@ -1,13 +1,14 @@
+use chrono::NaiveDateTime;
+
 use crate::data::{quote::Quote, trade::Trade};
 
-use super::{aggregate_base::{Aggregate, AggregateNew}, aggregate_framework::{AggregateFrameworkContext, AggregateReference}};
+use super::{aggregate_base::{Aggregate, AggregateNew}, aggregate_framework::AggregateFrameworkContext};
 
 
 
 
 pub struct SimpleAggregate{
     symbol: String,
-    volume_ref: AggregateReference
 }
 
 impl Aggregate for SimpleAggregate{
@@ -19,8 +20,9 @@ impl Aggregate for SimpleAggregate{
         // println!("trade for {}|{}", trade.trade_timestamp, trade.symbol);
      }
 
-     fn compute_slice(&self, _slice: &chrono::prelude::NaiveDateTime) -> f64 {
-        self.volume_ref.this_slice()
+     fn compute_slice(&self, _slice: &NaiveDateTime, context: &AggregateFrameworkContext) -> f64 {
+       context.agg_ref("Volume", self).this_slice()
+       
      }
 
      fn get_name(&self) -> &str {
@@ -33,10 +35,9 @@ impl Aggregate for SimpleAggregate{
 }
 
 impl AggregateNew for SimpleAggregate{
-    fn new(symbol: &str, context: &AggregateFrameworkContext) -> Self {
+    fn new(symbol: &str) -> Self {
         SimpleAggregate{
             symbol: symbol.to_string(),
-            volume_ref: context.get_aggregate_reference("Volume",symbol)
         }
     }
 }
@@ -57,7 +58,7 @@ impl Aggregate for VolumeAggregate{
         self.total_volume += trade.volume as f64;
      }
 
-     fn compute_slice(&self, _slice: &chrono::prelude::NaiveDateTime) -> f64 {
+     fn compute_slice(&self, _slice: &chrono::prelude::NaiveDateTime, _context: &AggregateFrameworkContext) -> f64 {
 
         self.total_volume
      }
@@ -72,7 +73,7 @@ impl Aggregate for VolumeAggregate{
 }
 
 impl AggregateNew for VolumeAggregate{
-    fn new(symbol: &str,  _: & AggregateFrameworkContext) -> Self {
+    fn new(symbol: &str) -> Self {
         VolumeAggregate{
             symbol: symbol.to_string(),
             total_volume: 0.0
