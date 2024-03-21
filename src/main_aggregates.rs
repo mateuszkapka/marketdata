@@ -66,7 +66,7 @@ fn main() {
     ));
 
 
-    writer.write_aggregates(result);
+    writer.write_aggregates(&result);
     writer.finalize();
 
     exit(0);

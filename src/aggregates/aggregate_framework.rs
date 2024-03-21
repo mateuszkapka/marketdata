@@ -1,7 +1,8 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{Days, NaiveDate, NaiveDateTime, NaiveTime};
 use simple_error::SimpleError;
 
 use super::aggregate_base::{Aggregate, AggregateNew, DEFAULT_AGGREGATES};
@@ -15,7 +16,7 @@ use crate::readers::parquet_reader::{ParquetReader, ParquetStreamReader};
 use crate::aggregates::schedule::SliceSchedule;
 use crate::aggregates::schedule::WallClockSliceSchedule;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AggregateValue{
     pub symbol: String,
     pub slice: NaiveDateTime,
@@ -29,7 +30,7 @@ pub struct AggregateFramework<'a> {
     date: NaiveDate,
     parser_type: &'a ParserType,
     slice_schedule: Box<dyn SliceSchedule>,
-    read_cache: Rc<AggregateReadCache>,
+    read_cache: Rc<RefCell<AggregateReadCache>>,
     filter: Option<SymbolFilter<'a>>,
 }
 
@@ -40,7 +41,7 @@ impl<'a> AggregateFramework<'a> {
             aggregates: HashMap::new(),
             symbology: Self::read_symbology(parser_type, date),
             date: date.clone(),
-            read_cache: Rc::new(AggregateReadCache::new(date)),
+            read_cache: Rc::new(RefCell::new(AggregateReadCache::new(date))),
             parser_type,
             slice_schedule: Box::new(WallClockSliceSchedule::new(date)),
             filter
@@ -58,8 +59,6 @@ impl<'a> AggregateFramework<'a> {
     pub fn register_aggregate<TAggregate> (&mut self)
     where TAggregate: Aggregate + AggregateNew + 'a{
         for symbol in &self.symbology {
-            let mut context = AggregateFrameworkContext::new();
-            context.set_cache(self.read_cache.clone());
             let aggregates_vector: & mut Vec<Box<dyn Aggregate>> = match self.aggregates.get_mut(&symbol[..]) {
                 None => {
                     self.aggregates.insert(symbol.clone(), Vec::new());
@@ -102,7 +101,7 @@ impl<'a> AggregateFramework<'a> {
         Ok(())
     }
 
-    pub fn run(&mut self)  -> Result<&Vec<AggregateValue>, SimpleError>{
+    pub fn run(&mut self)  -> Result<Vec<AggregateValue>, SimpleError>{
 
         let mut reader = ParquetStreamReader{
             filter: self.filter.clone(),
@@ -134,12 +133,12 @@ impl<'a> AggregateFramework<'a> {
                     match self.aggregates.get_mut(event.get_symbol()) {
                         Some(aggregates_to_run) => {
                             for agg in aggregates_to_run {
-                                let mut context = AggregateFrameworkContext::new();
-                                context.set_cache(self.read_cache.clone());
-                                let value = agg.as_mut().compute_slice(slice_time, &context);
+                                let cache = self.read_cache.clone();
+                                let context = AggregateFrameworkContext::new(slice_time, cache);
+                                let value = agg.as_mut().compute_slice(&context);
                                 drop(context);
                                 {
-                                    Rc::get_mut(&mut self.read_cache).unwrap().push(AggregateValue{
+                                    self.read_cache.borrow_mut().push(AggregateValue{
                                         symbol: agg.get_symbol().to_string(),
                                         aggregate_name: agg.get_name().to_string(),
                                         slice: slice_time.clone(),
@@ -156,7 +155,7 @@ impl<'a> AggregateFramework<'a> {
         
         let filename = get_normalised_path(&self.date, &self.parser_type);
         reader.read_market_data(&filename)?;
-        Ok(&self.read_cache.aggregates)
+        Ok(self.read_cache.try_borrow().unwrap().aggregates.to_vec())
 
     }
 
@@ -195,46 +194,62 @@ impl AggregateReadCache{
             historical_aggregate_cache: HashMap::new()
         }
     }
+
+    pub fn ensure_date(&mut self, _date: &NaiveDate){
+        
+    }
+
 }
 
-pub struct AggregateFrameworkContext{
-    cache: Option<Rc<AggregateReadCache>>,
+pub struct AggregateFrameworkContext<'a>{
+    cache: Rc<RefCell<AggregateReadCache>>,
+    slice: &'a NaiveDateTime
 }
 
-impl AggregateFrameworkContext{
-    fn new() -> Self{
+impl<'a> AggregateFrameworkContext<'a>{
+    fn new(slice: &'a NaiveDateTime, cache: Rc<RefCell<AggregateReadCache>>) -> Self{
         AggregateFrameworkContext{
-            cache: None
+            cache: cache,
+            slice: slice
         }
     }
 
-    pub fn agg_ref(&self, aggregate_name: &str, aggregate: &dyn Aggregate) -> AggregateReference {
+    pub fn agg_ref(&'a self, aggregate_name: &str, aggregate: &dyn Aggregate) -> AggregateReference {
         AggregateReference{
             aggregate_name: format!("{}Aggregate", aggregate_name), 
-            cache: self.cache.clone().unwrap(),
-            symbol: aggregate.get_symbol().to_string()
+            slice: self.slice,
+            context: self,
+            symbol: aggregate.get_symbol().to_string(),
         }
     }
 
-    pub fn set_cache(&mut self, cache: Rc<AggregateReadCache>){
-        self.cache = Some(cache);
+
+    pub fn ensure_date(&mut self, date: &NaiveDate){
+        self.cache.borrow_mut().ensure_date(date)  ;
     }
 }
 
-pub struct AggregateReference{
+pub struct AggregateReference<'a>{
     aggregate_name: String,
-    cache: Rc<AggregateReadCache>,
-    symbol: String
+    symbol: String,
+    slice: &'a NaiveDateTime,
+    context: &'a AggregateFrameworkContext<'a>
 }
 
-impl<'a> AggregateReference{
+impl<'a> AggregateReference<'a>{
     pub fn this_slice(&self) -> f64{
-        for value in self.cache.aggregates.iter().rev(){
+        for value in self.context.cache.borrow_mut().get_todays_aggregates().iter().rev(){
             if value.aggregate_name == self.aggregate_name && value.symbol == self.symbol{
                 return value.value;
             }
         }
 
         panic!("Unable to find this slice for aggregate {} and symbol {} ", self.aggregate_name, self.symbol)
+    } 
+
+    pub fn prev_eod(&mut self) -> f64{
+        self.context.cache.borrow_mut().ensure_date(&self.slice.checked_sub_days(Days::new(1)).unwrap().date());
+
+        0.0
     }
 }
