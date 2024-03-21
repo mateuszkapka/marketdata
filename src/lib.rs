@@ -25,16 +25,20 @@ fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
 }
 
 #[pyfunction]
-fn compute_aggregates(market: &str, symbol: Option<&str>, aggregate: Option<&str>) -> PyResult<PyDataFrame> {
+fn compute_aggregates(market: &str, symbol: Option<&str>, aggregates: Option<&str>) -> PyResult<PyDataFrame> {
     let source = ParserType::from_str(&market).expect("Invalid value for argument source!");
     let date = NaiveDate::from_ymd_opt(2024, 01, 22).unwrap();
     let filter = symbol.map_or_else(|| None, |x| Some(SymbolFilter::new(x)));
     let mut framework = AggregateFramework::new(&source, &date, filter);
     
-    match aggregate {
-        Some(agg) => framework.register_aggregate_by_name(agg).unwrap(),
+    
+    match aggregates {
+        Some(agg) => {
+            framework.register_aggregate_list_by_name(agg.split(',').collect()).unwrap_or_else(|err| panic!("Error finding aggs by name {}", err))
+        }
         None => framework.register_default_aggregates().unwrap()
     };
+    
 
     let result = framework.run().unwrap_or_else(|err| panic!("Calculating aggregates failed: {}", err));
 
