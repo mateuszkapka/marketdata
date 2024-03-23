@@ -19,7 +19,7 @@ impl Aggregate for SimpleAggregate{
      }
 
      fn compute_slice<'a>(&self, context: &'a AggregateFrameworkContext<'a>) -> f64 {
-       context.agg_ref("Volume", self).this_slice()
+       context.agg_ref("Volume", self).prev_eod()
        
      }
 

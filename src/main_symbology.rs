@@ -33,7 +33,7 @@ fn main() {
             .unwrap_or_else(|err| panic!("Invalid parameter date: {}", err));
         
     let source  = matches.get_one::<ParserType>("source").unwrap();
-    let symbology = generate_symbology(&get_normalised_path(&date, &source))
+    let symbology = generate_symbology(&get_normalised_path(&date, &source, None))
                 .unwrap_or_else(|err| panic!("Unable to load symbology: {}", err));
 
     let mut writer: Box<ParquetWriter> = Box::new(ParquetWriter::new(

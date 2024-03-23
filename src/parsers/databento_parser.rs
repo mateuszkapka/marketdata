@@ -6,6 +6,7 @@ use std::fs;
 use chrono::{NaiveDate, NaiveDateTime};
 use databento::dbn::decode::{DbnDecoder, DecodeRecordRef};
 use databento::dbn::{RecordRef, RecordRefEnum};
+use crate::data::event_header::EventHeader;
 use crate::writers::base_writer::BaseWriter;
 use crate::paths::scratch;
 use crate::data::event::*;
@@ -41,7 +42,7 @@ impl<'a> NasdaqParser<'a>{
     pub fn new(writer: &'a mut Box<ParquetWriter>, date: &NaiveDate) -> Self{
         NasdaqParser{
             path_to_quotes:  scratch::get_nasdaq_path_to_quotes(date),
-            path_to_trades: scratch::get_nasdaq_path_to_quotes(date),
+            path_to_trades: scratch::get_nasdaq_path_to_trades(date),
             path_to_symbology: scratch::get_symbology_path_to_trades(date),
             writer: writer
         }
@@ -98,7 +99,7 @@ impl<'a> NasdaqParser<'a>{
 
     
 
-    pub(crate) fn parse_market_data(&mut self, date: &NaiveDate) {
+    pub(crate) fn parse_market_data(&mut self, date: &NaiveDate, symbol_filter: Option<&String>) {
         info!("Nasdaq market data parsing for date {}", date);
         let mut result: Vec<Event> = Vec::new();
 
@@ -116,7 +117,6 @@ impl<'a> NasdaqParser<'a>{
         events_buffer.push(latest_trade).unwrap();
         while !events_buffer.is_empty() {   
             let min_event: Event = events_buffer.pop().unwrap();
-
             match min_event {
                 Event::Quote(_) =>{
                     let next_event = self.process_one(&quotes_decorer.decode_record_ref().unwrap(), &symbology);
@@ -133,7 +133,17 @@ impl<'a> NasdaqParser<'a>{
                     }
                 }
             }
+
+            match symbol_filter {
+                Some(filter) =>{
+                    if filter != min_event.get_symbol(){
+                        continue;
+                    }
+                },
+                None => ()
+            };
             result.push(min_event);
+
             if index != 0 && index % BATCH_SIZE == 0 {
                 self.writer.write_matket_data(&result);
                 result.clear();
@@ -141,6 +151,12 @@ impl<'a> NasdaqParser<'a>{
             }
 
             index+=1;
+        }
+
+        if result.len() > 0 {
+            self.writer.write_matket_data(&result);
+            result.clear();
+            info!("Flushed after {} messages...", index);
         }
     }
 }

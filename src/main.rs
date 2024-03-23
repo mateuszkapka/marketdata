@@ -24,6 +24,9 @@ use clap::arg;
     let matches = command!() // requires `cargo` feature
     .arg(arg!([source] "Surce")
         .value_parser(clap::builder::EnumValueParser::<ParserType>::new()))
+    .arg(arg!(
+        -s --symbol <SYMBOL> "Filter by symbol"
+    ).required(false)) 
     .arg(
         arg!(
             -d --date <DATE> "Date to run the aggregator on"
@@ -33,16 +36,17 @@ use clap::arg;
     )
     .get_matches();
 
+    let filter_str = matches.get_one::<String>("symbol");
     let date: NaiveDate = NaiveDate::parse_from_str(matches.get_one::<String>("date").unwrap(), "%Y%m%d")
             .unwrap_or_else(|err| panic!("Invalid parameter date: {}", err));
     let source  = matches.get_one::<ParserType>("source").unwrap();
 
     let parser = parsers::parser::Parser {};
     let mut writer: Box<ParquetWriter> = Box::new(ParquetWriter::new(
-        get_normalised_path(&date, &source),
+        get_normalised_path(&date, &source, filter_str.map(|x| x.as_str())),
         get_market_data_schema()
     ));
 
-    parser.parse_market_data(&date, source.clone(), &mut writer);
+    parser.parse_market_data(&date, source.clone(), &mut writer, filter_str);
     writer.finalize();
 }

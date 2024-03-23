@@ -27,10 +27,9 @@ fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
 #[pyfunction]
 fn compute_aggregates(market: &str, symbol: Option<&str>, aggregates: Option<&str>) -> PyResult<PyDataFrame> {
     let source = ParserType::from_str(&market).expect("Invalid value for argument source!");
-    let date = NaiveDate::from_ymd_opt(2024, 01, 22).unwrap();
+    let date = NaiveDate::from_ymd_opt(2024, 01, 23).unwrap();
     let filter = symbol.map_or_else(|| None, |x| Some(SymbolFilter::new(x)));
     let mut framework = AggregateFramework::new(&source, &date, filter);
-    
     
     match aggregates {
         Some(agg) => {

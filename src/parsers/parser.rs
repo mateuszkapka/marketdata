@@ -37,15 +37,15 @@ impl fmt::Display for ParserType {
 pub struct Parser {}
 
 impl Parser {
-    pub fn parse_market_data(&self, date: &NaiveDate, parser_type: ParserType, writer: & mut Box<ParquetWriter>){
+    pub fn parse_market_data(&self, date: &NaiveDate, parser_type: ParserType, writer: & mut Box<ParquetWriter>, symbol_filter: Option<&String>){
         match parser_type {
             ParserType::WSE => {
                 let mut parser = wse_parser::WSEParser::new(writer);
-                parser.parse_market_data(date)
+                parser.parse_market_data(date, symbol_filter)
             },
             ParserType::NASDAQ => {
                 let mut parser = databento_parser::NasdaqParser::new(writer, date);
-                parser.parse_market_data(date)
+                parser.parse_market_data(date, symbol_filter)
             }
         }
     }

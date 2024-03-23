@@ -7,11 +7,11 @@ use simple_error::SimpleError;
 
 use super::aggregate_base::{Aggregate, AggregateNew, DEFAULT_AGGREGATES};
 use super::test_aggregates::{SimpleAggregate, VolumeAggregate};
-use crate::paths::scratch::{get_normalised_path, get_symbology_path};
+use crate::paths::scratch::{get_aggregates_path, get_normalised_path, get_symbology_path};
 use crate::data::event::Event;
 use crate::data::event_header::EventHeader;
 use crate::parsers::parser::ParserType;
-use crate::readers::filters::SymbolFilter;
+use crate::readers::filters::{ParquetFilter, SymbolFilter};
 use crate::readers::parquet_reader::{ParquetReader, ParquetStreamReader};
 use crate::aggregates::schedule::SliceSchedule;
 use crate::aggregates::schedule::WallClockSliceSchedule;
@@ -41,7 +41,7 @@ impl<'a> AggregateFramework<'a> {
             aggregates: HashMap::new(),
             symbology: Self::read_symbology(parser_type, date),
             date: date.clone(),
-            read_cache: Rc::new(RefCell::new(AggregateReadCache::new(date))),
+            read_cache: Rc::new(RefCell::new(AggregateReadCache::new(date, parser_type))),
             parser_type,
             slice_schedule: Box::new(WallClockSliceSchedule::new(date)),
             filter
@@ -152,8 +152,13 @@ impl<'a> AggregateFramework<'a> {
                 }
             }
         };
+
+        let filter_symbol = match self.filter {
+            Some(f) => f.get_symbol(),
+            None => None
+        };
         
-        let filename = get_normalised_path(&self.date, &self.parser_type);
+        let filename = get_normalised_path(&self.date, &self.parser_type, filter_symbol);
         reader.read_market_data(&filename)?;
         Ok(self.read_cache.try_borrow().unwrap().aggregates.to_vec())
 
@@ -171,7 +176,8 @@ impl<'a> AggregateFramework<'a> {
 pub struct AggregateReadCache{
     current_date: NaiveDate,
     aggregates: Vec<AggregateValue>,
-    historical_aggregate_cache: HashMap<NaiveDate, Vec<AggregateValue>>
+    historical_aggregate_cache: HashMap<NaiveDate, Vec<AggregateValue>>,
+    parser_type: ParserType
 }
 
 impl AggregateReadCache{
@@ -186,17 +192,26 @@ impl AggregateReadCache{
     pub fn get_todays_aggregates(&self) -> &Vec<AggregateValue>{
         &self.aggregates
     }
+    
+    pub fn get_aggregates_for_date(&self, date: &NaiveDate) -> &Vec<AggregateValue>{
+        &self.historical_aggregate_cache.get(date).unwrap()
+    }
 
-    pub fn new(date: &NaiveDate) -> Self{
+    pub fn new(date: &NaiveDate, parser_type: &ParserType) -> Self{
         AggregateReadCache{
             aggregates: Vec::new(),
             current_date: date.clone(),
-            historical_aggregate_cache: HashMap::new()
+            historical_aggregate_cache: HashMap::new(),
+            parser_type: parser_type.clone()
         }
     }
 
-    pub fn ensure_date(&mut self, _date: &NaiveDate){
-        
+    pub fn ensure_date(&mut self, date: &NaiveDate){
+        let reader = ParquetReader{};
+
+        let filepath = get_aggregates_path(date, &self.parser_type, None);
+        let aggs = reader.read_aggregates(&filepath);
+        self.historical_aggregate_cache.insert(date.clone(), aggs);
     }
 
 }
@@ -225,7 +240,7 @@ impl<'a> AggregateFrameworkContext<'a>{
 
 
     pub fn ensure_date(&mut self, date: &NaiveDate){
-        self.cache.borrow_mut().ensure_date(date)  ;
+        self.cache.borrow_mut().ensure_date(date);
     }
 }
 
@@ -248,7 +263,14 @@ impl<'a> AggregateReference<'a>{
     } 
 
     pub fn prev_eod(&mut self) -> f64{
-        self.context.cache.borrow_mut().ensure_date(&self.slice.checked_sub_days(Days::new(1)).unwrap().date());
+        let date = &self.slice.checked_sub_days(Days::new(1)).unwrap().date();
+        self.context.cache.borrow_mut().ensure_date(date);
+
+        for value in self.context.cache.borrow_mut().get_aggregates_for_date(date).iter().rev(){
+            if value.aggregate_name == self.aggregate_name && value.symbol == self.symbol{
+                return value.value;
+            }
+        }
 
         0.0
     }
