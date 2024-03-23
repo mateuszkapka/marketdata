@@ -7,9 +7,11 @@ mod paths;
 
 use aggregates::aggregate_framework::AggregateFramework;
 use clap::{arg, command};
+use log::info;
 use parsers::parser::ParserType;
 use paths::scratch::get_aggregates_path;
 use readers::filters::SymbolFilter;
+use simple_logger::{set_up_color_terminal, SimpleLogger};
 use writers::{parquet_writer::ParquetWriter, schemas::get_aggregates_schema};
 use std::process::exit;
 use chrono::NaiveDate;
@@ -17,6 +19,10 @@ use crate::writers::base_writer::BaseWriter;
 
 
 fn main() {
+    set_up_color_terminal();
+    SimpleLogger::new().init().unwrap();
+    
+
     let matches = command!() // requires `cargo` feature
     .arg(arg!([source] "Surce")
         .value_parser(clap::builder::EnumValueParser::<ParserType>::new()))
@@ -45,6 +51,8 @@ fn main() {
     let filter = filter_str.map_or_else(|| None, |x| Some(SymbolFilter::new(&x)));
     let source  = matches.get_one::<ParserType>("source").unwrap();
 
+    info!("Running aggregator...");
+
     let mut framework = AggregateFramework::new(&source, &date, filter);
     if let Some(aggregates) = aggregates {
         for agg in aggregates.split(','){
@@ -57,17 +65,23 @@ fn main() {
         .unwrap_or_else(|err| panic!("Aggregate registration failed: {}", err));
     }
     
+    info!("Computing aggregates...");
+
     let result = framework.run()
         .unwrap_or_else(|err| panic!("Calculating aggregates failed: {}", err));
 
+    info!("writing parquet file...");
+
     let mut writer: Box<ParquetWriter> = Box::new(ParquetWriter::new(
-        get_aggregates_path(&date, &source),
+        get_aggregates_path(&date, &source, Some(filter_str.unwrap())),
         get_aggregates_schema()
     ));
 
 
-    writer.write_aggregates(result);
+    writer.write_aggregates(&result);
     writer.finalize();
+
+    info!("Finished!");
 
     exit(0);
 }

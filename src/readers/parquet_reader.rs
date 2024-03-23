@@ -2,7 +2,7 @@
 
 use std::fs::File;
 
-use crate::{writers::schemas::{get_market_data_schema, get_symbology_schena, map_columns_to_indexes}, data::event::Event};
+use crate::{aggregates::aggregate_framework::AggregateValue, data::event::Event, writers::schemas::{get_aggregates_schema, get_market_data_schema, get_symbology_schena, map_columns_to_indexes}};
 
 use chrono::NaiveDateTime;
 use parquet::{file::{reader::FileReader, serialized_reader::SerializedFileReader}, record::RowAccessor};
@@ -87,6 +87,31 @@ impl ParquetReader{
             let record = record_result.unwrap();
             let column_index = colums_mapping.get("symbol").unwrap().clone();
             result.push(record.get_string(column_index).unwrap().to_string())
+        }
+
+        result
+    }
+    
+    #[allow(deprecated)]
+    pub fn read_aggregates(&self, filename: &str) -> Vec<AggregateValue>{
+        let mut result = Vec::new();
+        let schema = get_aggregates_schema();
+        let colums_mapping = map_columns_to_indexes(&schema);
+
+        let file = File::open(filename).unwrap();
+        let reader = SerializedFileReader::new(file).unwrap();
+        let mut arrow_reader = reader.get_row_iter(None).unwrap();
+
+        while let Some(record_result) = arrow_reader.next() {
+            let record = record_result.unwrap();
+            result.push(
+                AggregateValue{
+                    aggregate_name: record.get_string(colums_mapping.get("aggregate_name").unwrap().clone()).unwrap().clone(),
+                    slice:  NaiveDateTime::from_timestamp_millis(record.get_timestamp_millis(colums_mapping.get("slice").unwrap().clone()).unwrap().clone()).unwrap(), 
+                    symbol: record.get_string(colums_mapping.get("symbol").unwrap().clone()).unwrap().clone(),
+                    value: record.get_double(colums_mapping.get("value").unwrap().clone()).unwrap().clone(),
+                }
+            )
         }
 
         result

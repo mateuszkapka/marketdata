@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["nasdaq", "--date", "20240123"],
+            "args": ["nasdaq", "--date", "20240123", "-s", "AAPL"],
             "cwd": "${workspaceFolder}"
         },
         {
@@ -72,7 +72,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["wse","--date","20240122" ,"--aggregates","Volume,Test"],
+            "args": ["nasdaq","--date","20240123" ,"--aggregates","Volume,Test", "-s", "AAPL"],
             "cwd": "${workspaceFolder}"
         }
     ]

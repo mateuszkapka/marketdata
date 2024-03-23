@@ -31,8 +31,12 @@ pub fn get_symbology_path_to_trades(date: &NaiveDate) -> String{
 }
 
 // Output 
-pub fn get_normalised_path(date: &NaiveDate, parser_type: &ParserType) -> String{
-    format!("{}/{}_{}.parquet", NORMALISED_OUTPUT_PATH, date.format("%Y%m%d"), parser_type)
+pub fn get_normalised_path(date: &NaiveDate, parser_type: &ParserType, symbol: Option<&str>) -> String{
+    let symbol_part = match symbol{
+        None => "".to_string(),
+        Some(s) => format!("_{}", s)
+    };
+    format!("{}/{}_{}{}.parquet", NORMALISED_OUTPUT_PATH, date.format("%Y%m%d"), parser_type,symbol_part)
 }
 
 #[allow(dead_code)]
@@ -41,6 +45,10 @@ pub fn get_symbology_path(date: &NaiveDate, parser_type: &ParserType) -> String 
 }
 
 #[allow(dead_code)]
-pub fn get_aggregates_path(date: &NaiveDate, parser_type: &ParserType) -> String {
-    format!("{}/{}_{}.parquet", AGGREGATES_OUTPUT_PATH, date.format("%Y%m%d"), parser_type)
+pub fn get_aggregates_path(date: &NaiveDate, parser_type: &ParserType, symbol: Option<&str>) -> String {
+    let symbol_part = match symbol{
+        None => "".to_string(),
+        Some(s) => format!("_{}", s)
+    };
+    format!("{}/{}_{}{}.parquet", AGGREGATES_OUTPUT_PATH, date.format("%Y%m%d"), parser_type, symbol_part)
 }

@@ -28,12 +28,12 @@ impl<'a> WSEParser<'a> {
         }
     }
 
-    pub(crate) fn parse_market_data(&mut self, date: &NaiveDate) {
+    pub(crate) fn parse_market_data(&mut self, date: &NaiveDate, symbol_filter: Option<&String>) {
         let files_to_parse = self.get_files_to_parse(date);
         let mut result: Vec<Event> = Vec::new();
 
         for file in files_to_parse {
-            self.process_symbol_file(file, &mut result, date);
+            self.process_symbol_file(file, &mut result, date, symbol_filter);
         }
 
         result.sort_by(|a, b| NaiveDateTime::cmp(&a.get_timestamp(), &b.get_timestamp()));
@@ -78,9 +78,18 @@ impl<'a> WSEParser<'a> {
         quotes
     }
 
-    fn process_symbol_file(&self, file: DirEntry, events: &mut Vec<Event>, _date: &NaiveDate) {
+    fn process_symbol_file(&self, file: DirEntry, events: &mut Vec<Event>, _date: &NaiveDate, symbol_filter: Option<&String>) {
         let event = get_type_from_filename(&file);
         let symbol = get_symbol_from_filename(&file);
+
+        match symbol_filter {
+            Some(filter) => {
+                if filter != &symbol{
+                    return;
+                }
+            },
+            None => ()
+        }
 
         match event {
             'Q' => {
