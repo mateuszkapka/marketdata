@@ -79,7 +79,7 @@ impl ParquetReader{
         let schema = get_symbology_schena();
         let colums_mapping = map_columns_to_indexes(&schema);
 
-        let file = File::open(filename).unwrap();
+        let file = File::open(filename).unwrap_or_else(|x| panic!("Unable to load file {}, {:?}", filename, x));
         let reader = SerializedFileReader::new(file).unwrap();
         let mut arrow_reader = reader.get_row_iter(None).unwrap();
 
